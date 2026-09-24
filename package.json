@@ -1,0 +1,32 @@
+{
+  "name": "dhwani-ai",
+  "version": "1.0.0",
+  "description": "Dhwani AI - Real-Time AI Voice Cloning Detection & Scam Protection",
+  "private": true,
+  "scripts": {
+    "install": "npm install --prefix server && npm install --prefix client",
+    "install:all": "npm install --prefix server && npm install --prefix client",
+    "dev:server": "npm run dev --prefix server",
+    "dev:client": "npm run dev --prefix client",
+    "dev": "concurrently -n \"server,client\" -c \"blue.bold,magenta.bold\" \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:all": "concurrently -n \"server,client\" -c \"blue.bold,magenta.bold\" \"npm run dev:server\" \"npm run dev:client\"",
+    "build": "npm run build --prefix server && npm run build --prefix client",
+    "test": "npm test --prefix server && npm test --prefix client"
+  },
+  "keywords": [
+    "scam-protection",
+    "ai",
+    "groq",
+    "deepgram",
+    "webrtc",
+    "socket.io"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "framer-motion": "^13.2.0"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.5"
+  }
+}

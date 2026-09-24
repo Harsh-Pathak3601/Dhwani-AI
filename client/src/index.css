@@ -1,0 +1,290 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.font-brand {
+  font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
+  letter-spacing: -0.025em;
+}
+
+.font-brand-display {
+  font-family: 'Outfit', sans-serif;
+  letter-spacing: -0.035em;
+}
+
+:root {
+  --color-background: #0D1B2A;
+  --color-background-light: #132238;
+  --color-primary: #1D9E75;
+  --color-primary-light: #24C48F;
+  --color-danger: #E24B4A;
+  --color-danger-light: #F06B6A;
+  --color-warning: #EF9F27;
+  --color-warning-light: #F7B94D;
+  --color-text: #E8E6E1;
+  --color-text-muted: rgba(232, 230, 225, 0.55);
+  --color-glass-border: rgba(255, 255, 255, 0.08);
+  --color-glass-bg: rgba(255, 255, 255, 0.04);
+  --color-glass-bg-strong: rgba(255, 255, 255, 0.08);
+}
+
+/* ─── Keyframe Animations ─── */
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(29, 158, 117, 0.3), 0 0 24px rgba(29, 158, 117, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(29, 158, 117, 0.5), 0 0 48px rgba(29, 158, 117, 0.2);
+  }
+}
+
+@keyframes pulse-glow-danger {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(226, 75, 74, 0.3), 0 0 24px rgba(226, 75, 74, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(226, 75, 74, 0.5), 0 0 48px rgba(226, 75, 74, 0.2);
+  }
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+}
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes grid-pan {
+  0% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(24px, 24px);
+  }
+}
+
+/* ─── Base Styles ─── */
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--color-background);
+  color: var(--color-text);
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  min-height: 100dvh;
+}
+
+#root {
+  min-height: 100dvh;
+}
+
+/* ─── Animated Background Pattern ─── */
+
+.animated-grid-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.animated-grid-bg::before {
+  content: '';
+  position: absolute;
+  inset: -24px;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.035) 1px, transparent 0);
+  background-size: 24px 24px;
+  animation: grid-pan 8s linear infinite;
+}
+
+.animated-grid-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at 50% 0%,
+    rgba(29, 158, 117, 0.06) 0%,
+    transparent 60%
+  ),
+  radial-gradient(
+    ellipse at 80% 80%,
+    rgba(29, 158, 117, 0.03) 0%,
+    transparent 50%
+  );
+}
+
+/* ─── Custom Scrollbar ─── */
+
+::-webkit-scrollbar {
+  width: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(232, 230, 225, 0.15);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(232, 230, 225, 0.25);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(232, 230, 225, 0.15) transparent;
+}
+
+/* ─── Glassmorphism Utilities ─── */
+
+@layer components {
+  .glass-card {
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 1rem;
+  }
+
+  .glass-card-strong {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 1rem;
+  }
+
+  /* ─── Animated Gradient Border ─── */
+
+  .gradient-border {
+    position: relative;
+    border-radius: 1rem;
+    overflow: hidden;
+  }
+
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      135deg,
+      rgba(29, 158, 117, 0.6),
+      rgba(29, 158, 117, 0.1),
+      rgba(239, 159, 39, 0.3),
+      rgba(29, 158, 117, 0.6)
+    );
+    background-size: 300% 300%;
+    animation: gradient-shift 6s ease infinite;
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* ─── Shimmer Effect ─── */
+
+  .shimmer-text {
+    background: linear-gradient(
+      90deg,
+      var(--color-text) 0%,
+      var(--color-primary-light) 40%,
+      var(--color-text) 80%
+    );
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shimmer 4s ease-in-out infinite;
+  }
+
+  /* ─── Animation Utilities ─── */
+
+  .animate-float {
+    animation: float 4s ease-in-out infinite;
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 3s ease-in-out infinite;
+  }
+
+  .animate-pulse-glow-danger {
+    animation: pulse-glow-danger 2s ease-in-out infinite;
+  }
+
+  .animate-gradient-shift {
+    background-size: 200% 200%;
+    animation: gradient-shift 4s ease infinite;
+  }
+
+  .animate-shimmer {
+    animation: shimmer 3s ease-in-out infinite;
+  }
+
+  .animate-spin-slow {
+    animation: spin-slow 12s linear infinite;
+  }
+}
