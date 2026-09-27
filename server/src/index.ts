@@ -53,6 +53,11 @@ const io = new Server(server, {
 // Helmet adds Express security headers to protect against common web vulnerabilities
 app.use(helmet());
 
+// Lightweight health check endpoint for external pingers / keep-awake monitors
+app.get('/health', (_req, res) => {
+  res.status(200).json({ status: 'ok', uptime: process.uptime() });
+});
+
 /**
  * ─── RATE LIMITER SETUP ───
  * Limits incoming requests to prevent DDoS and brute-force attacks.
