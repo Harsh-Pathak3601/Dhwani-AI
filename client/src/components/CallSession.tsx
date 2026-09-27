@@ -8,7 +8,6 @@ import TranscriptFeed from './TranscriptFeed';
 import CoachingCard from './CoachingCard';
 import VolumeMonitor from './VolumeMonitor';
 import { VoiceIntegrityPanel } from './VoiceIntegrityPanel';
-import { LivenessChallengeModal } from './LivenessChallengeModal';
 import { PreTransactionWarningModal } from './PreTransactionWarningModal';
 import { OOBVerificationModal } from './OOBVerificationModal';
 
@@ -388,18 +387,6 @@ const CallSession = () => {
             voiceState={voiceRiskState.state}
             vas={voiceStage1.vas}
             onDismiss={handleDismissCard} 
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Active Verbal Liveness Challenge Modal */}
-      <AnimatePresence>
-        {activeChallenge && (
-          <LivenessChallengeModal
-            challenge={activeChallenge}
-            transcript={transcript}
-            onRespond={(spokenText, latencyMs) => respondToLiveness(spokenText, latencyMs)}
-            onDismiss={() => respondToLiveness('skipped_to_oob', 1500)}
           />
         )}
       </AnimatePresence>

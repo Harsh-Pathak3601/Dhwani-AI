@@ -94,14 +94,10 @@ export function evaluateSecurityPolicy(
   }
 
   if (livenessScore !== undefined && livenessScore !== null) {
-    // If liveness passed strongly (>80), discount synthetic suspicion slightly (-12)
-    // If liveness failed (<50), increase index (+15)
+    // If biological liveness verified, discount suspicion (-12). Never penalize missing/skipped challenges.
     if (livenessScore > 80) {
       rawIndex -= 12;
-      explanations.push('Active verbal challenge successfully completed with natural prosody');
-    } else if (livenessScore < 50) {
-      rawIndex += 15;
-      explanations.push('Active challenge failed or displayed unnatural synthetic latency');
+      explanations.push('Passive vocal dynamics confirmed biological liveness');
     }
   }
 
@@ -111,10 +107,10 @@ export function evaluateSecurityPolicy(
 
   const securityRiskIndex = Math.min(100, Math.max(0, Math.round(rawIndex)));
 
-  // Determine 5-State Risk Tier per voice-cloning.md policy table
+  // Determine 5-State Risk Tier per voice policy
   let state: PolicyRiskState = 'Low';
   let requiresHold = false;
-  let requiresLivenessChallenge = false;
+  const requiresLivenessChallenge = false;
   let requiresOOB = false;
   let recommendedAction = 'Standard monitoring active; no immediate friction required.';
 
@@ -126,21 +122,18 @@ export function evaluateSecurityPolicy(
     state = 'Critical';
     requiresHold = hasConsequentialKeyword;
     requiresOOB = hasConsequentialKeyword;
-    requiresLivenessChallenge = true;
     recommendedAction = hasConsequentialKeyword
       ? 'CRITICAL ALERT: Synthetic voice characteristics combined with financial demand. Transaction HELD. Independent Trust Channel required.'
-      : 'CRITICAL ALERT: High-confidence synthetic voice detected across multiple acoustic channels. Immediate verbal challenge required.';
+      : 'CRITICAL ALERT: High-confidence synthetic voice detected across multiple acoustic channels. Callback verification recommended.';
     explanations.push('Consequence-scaled protection triggered: Action frozen pending out-of-band clearance.');
   } else if (securityRiskIndex >= 55 || stage1.vas >= 70) {
     state = 'High';
-    requiresLivenessChallenge = true;
     requiresOOB = hasConsequentialKeyword;
-    recommendedAction = 'High voice anomaly detected. Mandatory verbal challenge and callback recommended.';
+    recommendedAction = 'High voice anomaly detected. Independent secondary verification recommended.';
 
   } else if (securityRiskIndex >= 40 || stage1.vas >= 45 || stage2.impersonationRisk >= 50) {
     state = 'Suspicious';
-    requiresLivenessChallenge = true;
-    recommendedAction = 'Voice irregularity detected. Exercise heightened vigilance; optional active challenge available.';
+    recommendedAction = 'Voice irregularity detected. Exercise heightened vigilance.';
   } else {
     state = 'Low';
     recommendedAction = 'Voice parameters consistent with human speech; routine call monitoring.';

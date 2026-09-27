@@ -180,13 +180,8 @@ export const setupCallSocket = (socket: Socket, io: Server) => {
         });
       }
 
-      // Handle Liveness Challenge trigger if state is Suspicious or High, no challenge active, and cooldown passed
-      if (policy.requiresLivenessChallenge && !activeChallengeId && Date.now() > challengeCooldownUntil) {
-        const challenge = generateLivenessChallenge();
-        activeChallengeId = challenge.challengeId;
-        challengeCooldownUntil = Date.now() + 45000;
-        socket.emit('liveness:challenge', challenge);
-      }
+      // Liveness challenge modal disabled to prevent intrusive false positives
+      // Liveness is evaluated 100% passively via vocal fold dynamics and respiration acoustic metrics
 
       // Record Tamper-Evident Ledger Entry
       const evidence = recordEvidence(

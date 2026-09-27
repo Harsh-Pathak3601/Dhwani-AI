@@ -222,13 +222,13 @@ export const VoiceIntegrityPanel = ({
               </div>
             </div>
 
-            {/* Card 3: Active Liveness (Orange) */}
+            {/* Card 3: Passive Liveness (Orange) */}
             <div className="bg-orange-500/10 border border-orange-400/30 rounded-2xl p-2 sm:p-2.5 flex items-center gap-2 sm:gap-2.5 shadow-sm transition-all hover:bg-orange-500/15 min-w-0">
               <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-orange-600 flex items-center justify-center text-white shrink-0 shadow-md">
                 <Activity className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
               <div className="flex flex-col min-w-0 flex-1">
-                <span className="text-[10px] sm:text-[11px] font-semibold text-white/90 leading-tight">Active Liveness</span>
+                <span className="text-[10px] sm:text-[11px] font-semibold text-white/90 leading-tight">Passive Liveness</span>
                 <span className={`text-sm sm:text-base font-bold font-mono leading-tight mt-0.5 ${activeLivenessScore === '--' ? 'text-white/40' : 'text-white'}`}>
                   {activeLivenessScore}
                 </span>
