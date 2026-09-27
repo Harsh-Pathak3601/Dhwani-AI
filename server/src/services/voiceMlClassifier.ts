@@ -1,9 +1,38 @@
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import logger from '../utils/logger.js';
 import { AudioFeaturesPayload } from './voiceAuthService.js';
-import { createRequire } from 'module';
 
-const require = createRequire(import.meta.url);
-const trainedWeights = require('../models/voice_classifier_weights.json');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+function loadClassifierWeights() {
+  const candidates = [
+    path.resolve(__dirname, '../models/voice_classifier_weights.json'),
+    path.resolve(__dirname, '../../src/models/voice_classifier_weights.json'),
+    path.resolve(process.cwd(), 'dist/models/voice_classifier_weights.json'),
+    path.resolve(process.cwd(), 'src/models/voice_classifier_weights.json'),
+    path.resolve(process.cwd(), 'server/dist/models/voice_classifier_weights.json'),
+    path.resolve(process.cwd(), 'server/src/models/voice_classifier_weights.json')
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      try {
+        const raw = fs.readFileSync(candidate, 'utf-8');
+        return JSON.parse(raw);
+      } catch (err: any) {
+        logger.error(`Failed to parse weights at ${candidate}:`, { error: err.message });
+      }
+    }
+  }
+
+  logger.warn('voice_classifier_weights.json not found on disk, continuing with heuristic baseline');
+  return null;
+}
+
+const trainedWeights = loadClassifierWeights();
 
 export interface MlClassificationResult {
   isSpoof: boolean;
@@ -168,41 +197,44 @@ export function classifyVoiceAcousticML(features: AudioFeaturesPayload): MlClass
   ];
 
   // ── 3. Deep MLP Neural Network Forward Pass ──
-  const weights = trainedWeights.weights;
-  const scaler = trainedWeights.scaler;
+  const weights = trainedWeights?.weights;
+  const scaler = trainedWeights?.scaler;
 
-  // Layer 0: Standardization with trained StandardScaler
-  const scaled = new Float64Array(16);
-  for (let i = 0; i < 16; i++) {
-    scaled[i] = (featureVector[i] - scaler.mean[i]) / scaler.scale[i];
-  }
-
-  // Hidden Layer 1 (ReLU: 16 -> 32)
-  const h1 = new Float64Array(32);
-  for (let j = 0; j < 32; j++) {
-    let sum = weights.layer1_biases[j];
+  let mlpProbability = 0.15;
+  if (weights && scaler && weights.layer1_weights && weights.layer2_weights && weights.output_weights) {
+    // Layer 0: Standardization with trained StandardScaler
+    const scaled = new Float64Array(16);
     for (let i = 0; i < 16; i++) {
-      sum += scaled[i] * weights.layer1_weights[i][j];
+      scaled[i] = (featureVector[i] - scaler.mean[i]) / scaler.scale[i];
     }
-    h1[j] = Math.max(0, sum); // ReLU
-  }
 
-  // Hidden Layer 2 (ReLU: 32 -> 16)
-  const h2 = new Float64Array(16);
-  for (let k = 0; k < 16; k++) {
-    let sum = weights.layer2_biases[k];
+    // Hidden Layer 1 (ReLU: 16 -> 32)
+    const h1 = new Float64Array(32);
     for (let j = 0; j < 32; j++) {
-      sum += h1[j] * weights.layer2_weights[j][k];
+      let sum = weights.layer1_biases[j];
+      for (let i = 0; i < 16; i++) {
+        sum += scaled[i] * weights.layer1_weights[i][j];
+      }
+      h1[j] = Math.max(0, sum); // ReLU
     }
-    h2[k] = Math.max(0, sum); // ReLU
-  }
 
-  // Output Layer (Sigmoid: 16 -> 1)
-  let logit = weights.output_bias;
-  for (let k = 0; k < 16; k++) {
-    logit += h2[k] * weights.output_weights[k];
+    // Hidden Layer 2 (ReLU: 32 -> 16)
+    const h2 = new Float64Array(16);
+    for (let k = 0; k < 16; k++) {
+      let sum = weights.layer2_biases[k];
+      for (let j = 0; j < 32; j++) {
+        sum += h1[j] * weights.layer2_weights[j][k];
+      }
+      h2[k] = Math.max(0, sum); // ReLU
+    }
+
+    // Output Layer (Sigmoid: 16 -> 1)
+    let logit = weights.output_bias;
+    for (let k = 0; k < 16; k++) {
+      logit += h2[k] * weights.output_weights[k];
+    }
+    mlpProbability = 1 / (1 + Math.exp(-Math.max(-15, Math.min(15, logit))));
   }
-  const mlpProbability = 1 / (1 + Math.exp(-Math.max(-15, Math.min(15, logit))));
 
   // ── 4. Explainable Forensic Artifact Generation ──
   // Note: Only push single canonical artifact identifiers to prevent inflating anomaly counts.

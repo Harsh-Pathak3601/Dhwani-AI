@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && node -e \"const fs = require('fs'), path = require('path'); const src = path.resolve('src/models/voice_classifier_weights.json'); const dest = path.resolve('dist/models/voice_classifier_weights.json'); if (fs.existsSync(src)) { fs.mkdirSync(path.dirname(dest), { recursive: true }); fs.copyFileSync(src, dest); console.log('Copied voice classifier weights to dist'); }\"",
     "test": "vitest run",
     "start": "node dist/index.js",
     "dev": "nodemon --exec tsx src/index.ts"
