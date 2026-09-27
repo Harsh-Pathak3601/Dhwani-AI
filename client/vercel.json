@@ -1,5 +1,16 @@
 {
   "outputDirectory": "dist",
+  "headers": [
+    {
+      "source": "/(.*)\\.(mp4|webm|webp|png|jpg|svg|ico)$",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ],
   "rewrites": [
     {
       "source": "/(.*)",

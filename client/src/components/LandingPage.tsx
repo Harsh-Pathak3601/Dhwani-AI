@@ -31,6 +31,8 @@ export default function LandingPage() {
           loop
           muted
           playsInline
+          preload="auto"
+          poster="/hero-poster.webp"
         >
           <source
             src="/Creating_animated_AI_video_1080p_20260927052941.mp4"
