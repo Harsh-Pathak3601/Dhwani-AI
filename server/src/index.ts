@@ -26,13 +26,25 @@ import logger from './utils/logger.js';
 
 dotenv.config();
 
+const rawClientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+const cleanClientUrl = rawClientUrl.replace(/\/+$/, '');
+const allowedOrigins = Array.from(new Set([cleanClientUrl, 'http://localhost:5173']));
+
 export const app: Express = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     // Defines allowed origins for Socket.io cross-origin resource sharing
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
-    methods: ['GET', 'POST']
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      const normalized = origin.replace(/\/+$/, '');
+      if (allowedOrigins.includes(normalized) || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(null, true);
+    },
+    methods: ['GET', 'POST'],
+    credentials: true
   }
 });
 
@@ -53,7 +65,17 @@ const apiLimiter = rateLimit({
 });
 app.use('/api', apiLimiter);
 
-app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173' }));
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    const normalized = origin.replace(/\/+$/, '');
+    if (allowedOrigins.includes(normalized) || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(null, true);
+  },
+  credentials: true
+}));
 app.use(express.json());
 
 // Routes
