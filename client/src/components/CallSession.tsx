@@ -59,6 +59,7 @@ const CallSession = () => {
   const callerNumber = useSessionStore((state) => state.callerNumber);
   const speechLanguage = useSessionStore((state) => state.speechLanguage);
   const setSpeechLanguage = useSessionStore((state) => state.setSpeechLanguage);
+  const resetSessionState = useSessionStore((state) => state.resetSessionState);
   const [sessionStarted, setSessionStarted] = useState(false);
   const [isEndingCall, setIsEndingCall] = useState(false);
   const [cardDismissedId, setCardDismissedId] = useState<string | null>(null);
@@ -72,7 +73,27 @@ const CallSession = () => {
   displayCardDataRef.current = displayCardData;
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Clear previous session artifacts and ensure fresh state on initial mount
   useEffect(() => {
+    if (!sessionActive) {
+      setDisplayCardData(null);
+      setCardDismissedId(null);
+      setDismissedPhases(new Set());
+      resetSessionState();
+    }
+  }, []);
+
+  const isCallActive = sessionStarted || sessionActive;
+
+  useEffect(() => {
+    // Never display threat coaching card if call is not active
+    if (!isCallActive) {
+      if (displayCardDataRef.current) {
+        setDisplayCardData(null);
+      }
+      return;
+    }
+
     const currentCard = displayCardDataRef.current;
 
     // Trigger coaching card either from behavioral scam risk (>=40) OR VoiceShield elevated state (Suspicious/High/Critical)
@@ -116,16 +137,18 @@ const CallSession = () => {
         clearTimeout(closeTimerRef.current);
       }
     };
-  }, [riskData.risk, riskData.signal, riskData.phase, riskData.coaching, voiceRiskState, voiceStage1.vas]);
+  }, [isCallActive, riskData.risk, riskData.signal, riskData.phase, riskData.coaching, voiceRiskState, voiceStage1.vas]);
 
   const callbacksRef = useRef({ startSession, startFileSession, endSession });
   useEffect(() => {
     callbacksRef.current = { startSession, startFileSession, endSession };
   }, [startSession, startFileSession, endSession]);
 
-  const isCallActive = sessionStarted || sessionActive;
-
   const handleStartCall = useCallback(async () => {
+    setDisplayCardData(null);
+    setCardDismissedId(null);
+    setDismissedPhases(new Set());
+    resetSessionState();
     setSeconds(0);
     setSessionStarted(true);
     try {
@@ -133,11 +156,15 @@ const CallSession = () => {
     } catch (e) {
       console.error('Error starting session:', e);
     }
-  }, []);
+  }, [resetSessionState]);
 
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setDisplayCardData(null);
+    setCardDismissedId(null);
+    setDismissedPhases(new Set());
+    resetSessionState();
     setSeconds(0);
     setSessionStarted(true);
     try {
@@ -145,7 +172,7 @@ const CallSession = () => {
     } catch (err) {
       console.error('Error starting file session:', err);
     }
-  }, []);
+  }, [resetSessionState]);
 
   const handleEndCall = useCallback(() => {
     setIsEndingCall(true);
@@ -166,7 +193,7 @@ const CallSession = () => {
       if (reportResult.report) {
         navigate('/report', { state: { report: reportResult.report } });
       } else if (reportResult.safe) {
-        navigate('/');
+        navigate('/app');
       }
     }
   }, [reportResult, navigate]);
@@ -176,7 +203,7 @@ const CallSession = () => {
     if (isEndingCall && !reportResult) {
       timeout = setTimeout(() => {
         setIsEndingCall(false);
-        navigate('/');
+        navigate('/app');
       }, 8000);
     }
     return () => clearTimeout(timeout);
@@ -224,7 +251,7 @@ const CallSession = () => {
             Dhwani AI requires microphone input to analyze acoustic physical features in parallel. {permissionError}
           </p>
           <button 
-            onClick={() => navigate('/')} 
+            onClick={() => navigate('/app')} 
             className="w-full py-3 bg-white/10 hover:bg-white/20 rounded-xl transition-colors font-medium"
           >
             Go Back

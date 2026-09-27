@@ -56,7 +56,7 @@ describe('ReportView', () => {
     act(() => {
       vi.advanceTimersByTime(2000);
     });
-    expect(mockNavigate).toHaveBeenCalledWith('/');
+    expect(mockNavigate).toHaveBeenCalledWith('/app');
     vi.useRealTimers();
   });
 

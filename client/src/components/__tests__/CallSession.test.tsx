@@ -123,7 +123,7 @@ describe('CallSession', () => {
     expect(screen.getByText(/Microphone access denied/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /Go Back/i }));
-    expect(mockNavigate).toHaveBeenCalledWith('/');
+    expect(mockNavigate).toHaveBeenCalledWith('/app');
   });
 
   it('renders main components during call', () => {
@@ -170,7 +170,7 @@ describe('CallSession', () => {
       reportResult: { safe: true, report: null as any },
     });
     renderComponent();
-    expect(mockNavigate).toHaveBeenCalledWith('/');
+    expect(mockNavigate).toHaveBeenCalledWith('/app');
   });
 
   it('navigates to report view when unsafe report result is returned', () => {

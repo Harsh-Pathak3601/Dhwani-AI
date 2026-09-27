@@ -301,22 +301,22 @@ export const VoiceIntegrityPanel = ({
           <div className="my-1">
             <div className="flex items-baseline gap-1">
               <span className={`text-xl font-bold font-mono ${stage1.vas >= 60 ? 'text-danger' : stage1.vas >= 40 ? 'text-warning' : 'text-primary'}`}>
-                {hasVoice ? `${stage1.vas}%` : '--'}
+                {hasVoice && stage1.vas > 0 ? `${stage1.vas}%` : '--'}
               </span>
-              <span className="text-[9px] text-white/40">{hasVoice ? 'synthetic' : 'awaiting voice'}</span>
+              <span className="text-[9px] text-white/40">{hasVoice && stage1.vas > 0 ? 'synthetic' : 'awaiting voice'}</span>
             </div>
             <div className="w-full bg-white/10 rounded-full h-1.5 mt-1 overflow-hidden">
               <div 
                 className="h-full rounded-full transition-all duration-500" 
                 style={{ 
-                  width: `${stage1.vas}%`,
+                  width: hasVoice && stage1.vas > 0 ? `${stage1.vas}%` : '0%',
                   backgroundColor: stage1.vas >= 60 ? '#E24B4A' : stage1.vas >= 40 ? '#EF9F27' : '#1D9E75' 
                 }}
               />
             </div>
           </div>
           <span className="text-[9px] text-white/40 truncate font-mono">
-            Model: {stage1.model}
+            Model: {hasVoice && stage1.vas > 0 ? stage1.model : 'standby'}
           </span>
         </div>
 

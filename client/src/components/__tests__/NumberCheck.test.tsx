@@ -42,7 +42,7 @@ describe('NumberCheck', () => {
 
   it('renders input field and disabled button initially', () => {
     renderComponent();
-    expect(screen.getByPlaceholderText('+91 98765 43210')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('+91 98123 45678')).toBeInTheDocument();
     expect(screen.getByRole('button')).toBeDisabled();
   });
 
@@ -54,7 +54,7 @@ describe('NumberCheck', () => {
   it('formats the phone number correctly as the user types', () => {
     const setCallerNumberMock = vi.fn();
     renderComponent('', setCallerNumberMock);
-    const input = screen.getByPlaceholderText('+91 98765 43210');
+    const input = screen.getByPlaceholderText('+91 98123 45678');
     
     // Standard 10-digit
     fireEvent.change(input, { target: { value: '9876543210' } });

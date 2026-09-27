@@ -17,7 +17,7 @@ const ReportView = () => {
 
   useEffect(() => {
     if (!report) {
-      const timer = setTimeout(() => navigate('/'), 2000);
+      const timer = setTimeout(() => navigate('/app'), 2000);
       return () => clearTimeout(timer);
     }
   }, [report, navigate]);
@@ -275,7 +275,7 @@ const ReportView = () => {
 
         <motion.div variants={itemVariants} className="text-center">
           <button 
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/app')}
             className="text-white/40 hover:text-white flex items-center justify-center gap-2 mx-auto text-sm transition-colors py-4"
           >
             <Home className="w-4 h-4" /> Return to Home

@@ -118,6 +118,7 @@ interface SessionState {
   setIsDemoAttackRunning: (running: boolean) => void;
   speechLanguage: string;
   setSpeechLanguage: (lang: string) => void;
+  resetSessionState: () => void;
 }
 
 const getSavedCallerNumber = (): string => {
@@ -208,5 +209,42 @@ export const useSessionStore = create<SessionState>((set) => ({
       } catch {}
     }
     set({ speechLanguage: lang });
-  }
+  },
+  resetSessionState: () => set({
+    sessionActive: false,
+    sessionId: null,
+    transcript: '',
+    riskData: { risk: 0, signal: '', phase: 'intro', coaching: '', peakRiskScore: 0 },
+    reportResult: null,
+    voiceStage1: {
+      vas: 0,
+      confidence: 'insufficient',
+      artifacts: [],
+      model: 'heuristic',
+      processingTimeMs: 0
+    },
+    voiceStage2: {
+      speakerDeviation: null,
+      profileStatus: 'no_profile',
+      similarity: null,
+      impersonationRisk: 0,
+      urgencyFlag: false,
+      transactionKeywords: [],
+      signal: 'Awaiting incoming voice stream',
+      recommendedVerification: 'Monitoring'
+    },
+    voiceRiskState: {
+      state: 'Low',
+      index: 0,
+      explanation: ['Call monitoring in standby. Awaiting voice input.'],
+      recommendedAction: '',
+      isConsequential: false,
+      requiresHold: false
+    },
+    activeHold: null,
+    activeChallenge: null,
+    livenessResult: null,
+    evidenceAnchor: null,
+    isDemoAttackRunning: false
+  })
 }));

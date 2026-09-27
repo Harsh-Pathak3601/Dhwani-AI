@@ -228,7 +228,7 @@ const NumberCheck = () => {
               </div>
               <input
                 type="tel"
-                placeholder="+91 98765 43210"
+                placeholder="+91 98123 45678"
                 className="w-full bg-white/[0.04] border border-white/10 rounded-xl pl-12 pr-4 py-3.5 text-textMain placeholder:text-textMain/25 focus:outline-none focus:border-primary/50 focus:bg-white/[0.06] transition-all duration-200 text-base font-medium tracking-wide"
                 value={callerNumber}
                 onChange={(e) => {
