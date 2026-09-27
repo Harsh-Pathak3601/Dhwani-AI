@@ -13,51 +13,97 @@ const FALLBACK_MODELS = [
   'qwen/qwen3.8-27b',
   'openai/gpt-oss-120b',
   'openai/gpt-oss-20b',
-  'llama-3.3-70b-versatile',
-  'llama-3.1-8b-instant',
-  'gemma2-9b-it'
+  'allam-2-7b'
 ];
+
+/**
+ * ─── SAFE JSON EXTRACTION ───
+ * Robustly parses JSON from LLM generation whether returned raw, markdown fenced, or with leading/trailing text.
+ */
+export const extractJsonFromContent = (content: string): any => {
+  if (!content) return {};
+  const cleaned = content.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    const match = cleaned.match(/\{[\s\S]*\}/);
+    if (match) {
+      try {
+        return JSON.parse(match[0]);
+      } catch {
+        // Fallback: repair simple unescaped trailing quotes or truncated endings
+        try {
+          const repaired = match[0].replace(/,\s*([\]}])/g, '$1');
+          return JSON.parse(repaired);
+        } catch {}
+      }
+    }
+    return {};
+  }
+};
 
 /**
  * ─── RATE LIMITING COOLDOWNS & FALLBACK MODELS ───
  * Maintains records of failed models (specifically 429 rate limits). 
- * When a rate limit is triggered, stores a timestamp 5 minutes into the future to block 
- * further attempts until the limit expires.
+ * TPM limits on Groq reset in 2-5 seconds, so an 8s cooldown allows rapid recovery
+ * without permanently disabling the model.
  */
 const modelCooldowns: Record<string, number> = {};
-const COOLDOWN_DURATION = 5 * 60 * 1000;
+const COOLDOWN_DURATION = 8 * 1000;
 
 /**
  * Executes a Groq completion request utilizing a sequential fallback loop.
- * It tries each available model in order. If all are on cooldown, it falls back
- * to attempting all models again.
  */
-const executeWithFallback = async (options: Omit<ChatCompletionCreateParamsNonStreaming, 'model'>) => {
+export const executeWithFallback = async (options: Omit<ChatCompletionCreateParamsNonStreaming, 'model'>) => {
   let lastError;
   const now = Date.now();
 
   let modelsToTry = FALLBACK_MODELS.filter(model => !modelCooldowns[model] || now >= modelCooldowns[model]);
   
-  // Fallback: try all models if every model is on cooldown
   if (modelsToTry.length === 0) {
     modelsToTry = FALLBACK_MODELS;
   }
 
   for (const model of modelsToTry) {
     try {
-      return await getGroq().chat.completions.create({
+      const isNativeJsonModel = model.includes('qwen');
+      const requestOptions: ChatCompletionCreateParamsNonStreaming = {
         ...options,
         model
-      }, { timeout: 3000 });
+      };
+
+      // Only pass response_format for models that reliably support it
+      if (options.response_format?.type === 'json_object') {
+        if (!isNativeJsonModel) {
+          delete (requestOptions as any).response_format;
+        }
+      }
+
+      return await getGroq().chat.completions.create(requestOptions, { timeout: 7000 });
     } catch (err: any) {
       lastError = err;
       
+      // If model failed with failed_generation JSON validation, try to salvage the generated text
+      if (err.message && err.message.includes('failed_generation')) {
+        try {
+          const match = err.message.match(/"failed_generation":\s*"([\s\S]*?)"\s*\}\s*\}\s*$/);
+          if (match && match[1]) {
+            const unescaped = match[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
+            return {
+              choices: [{
+                message: { content: unescaped }
+              }]
+            } as any;
+          }
+        } catch {}
+      }
+
       const isRateLimit = err.status === 429 || 
                           err.message?.includes('rate_limit') || 
                           err.message?.includes('429');
                           
       if (isRateLimit) {
-        logger.warn(`Groq API rate-limited for model ${model}. Putting on 5-minute cooldown. Trying next...`, { error: err.message });
+        logger.warn(`Groq API rate-limited for model ${model}. Putting on 8s cooldown. Trying next...`, { error: err.message });
         modelCooldowns[model] = Date.now() + COOLDOWN_DURATION;
       } else {
         logger.warn(`Groq API failed with model ${model}, trying next...`, { error: err.message });
@@ -70,51 +116,54 @@ const executeWithFallback = async (options: Omit<ChatCompletionCreateParamsNonSt
 /**
  * ─── LLM SCAM DETECTION INSTRUCTIONS PROMPT ───
  * Contains the 8 critical rules of scam detection governing the LLM:
- * - Context matching (only react to active threats)
- * - Phase priority tracking (demand > intimidation > allegation > intro)
- * - Anti-hallucination guardrails for user documents
- * - Hinglish script parsing rules based on a 90%+ Devanagari threshold
+/**
+ * ─── DHWANI AI: VOICE CLONING & DEEPFAKE DETECTION PROMPT ───
+ * Real-time detection of AI Voice Cloning, Deepfake Impersonation, and Synthetic Social-Engineering.
+ * Governs the LLM to identify voice clone cues, emergency manipulation, isolation tactics,
+ * and provide street-smart 1st-person coaching to expose the synthetic voice and prevent financial loss.
  */
-const SCAM_DETECTION_SYSTEM_PROMPT = `You are a real-time scam detection AI for India. 
-Analyze this phone call transcript and detect crime patterns.
+const VOICE_CLONING_DETECTION_SYSTEM_PROMPT = `You are Dhwani AI — an advanced Real-Time AI Voice Cloning Detection and Deepfake Prevention engine.
+Analyze this phone call transcript to detect AI voice cloning, deepfake audio impersonation, and synthetic social-engineering attacks.
 
 RESPOND ONLY WITH VALID JSON. NO explanation text before or after.
-Format: 
+Format:
 { 
-  "thought": "<1 sentence analyzing the LATEST statements. Contrast it with the previous coaching and explain if/why we must pivot to a new defense>",
+  "thought": "<1 sentence analyzing the LATEST statements. Contrast with previous coaching and explain if/why we must pivot to a new defense>",
   "risk": <number 0-100>, 
-  "signal": "<brief what you detected>", 
+  "signal": "<brief summary of detected voice clone / impersonation tactic>", 
   "phase": "<intro | allegation | intimidation | demand>", 
-  "coaching": "<exact words for user to say right now>" 
+  "coaching": "<exact 1st-person words for user to speak right now>" 
 }
 
-CONVERSATIONAL PHASES (GOVERNED STRICTLY BY THE LATEST STATEMENTS):
-- "intro": Greetings, introductions, or name checks (e.g. "Hello, am I speaking to the owner of this number? This is Inspector Sharma"). Risk MUST be under 45 (typically 20-30) and coaching MUST be empty (""). Do NOT show alerts for greetings.
-- "allegation": Scammer makes an accusation (e.g. package seized, account blocked, relative arrested). Coaching: Focus strictly on asking for verification (IDs, tracking details, hub address). DO NOT mention money or arrests yet.
-- "intimidation": Scammer uses scare tactics. Coaching: Expose the bluff confidently and mock their authority. ONLY mention that "digital arrest is illegal" if they explicitly use the words "digital arrest". Otherwise, just tell them to send their officers to your address and stop wasting your time.
-- "demand": Scammer asks for money, bank transfers, OTPs, or app downloads (AnyDesk). Coaching: Firmly refuse the action and expose the fraud.
+CONVERSATIONAL PHASES IN VOICE CLONING ATTACKS:
+- "intro": Voice greeting or claiming identity (e.g. "Dad, it's me", "This is Director Singhal", "Hi, I am calling from bank security"). Risk MUST be under 40 (typically 15-30) and coaching MUST be empty (""). Do NOT show alerts for routine greetings.
+- "allegation": Caller presents an artificial emergency or claim (e.g., "I'm in police custody / hospital", "Urgent executive vendor transfer needed", "Your security profile is compromised"). Coaching: Prompt victim to test identity with questions only the real person knows (shared memories, family pet, internal employee code).
+- "intimidation": Caller creates intense urgency, demands confidentiality, or isolates the victim (e.g., "Don't call my regular phone, my battery died/confiscated", "Do not tell anyone, this is top secret", "If you hang up, terrible consequences will follow"). Coaching: Expose the isolation bluff: "I am hanging up and calling your verified personal number right now."
+- "demand": Caller asks for instant money transfer (UPI, RTGS, crypto), OTP, password, or financial transaction. Coaching: Firmly refuse: "I will not authorize any transfer or share OTP over this call. I am confirming this out-of-band directly."
 
 CRITICAL RULES FOR SCORING AND COACHING:
-1. NO EARLY ALERTS FOR INTRODUCTIONS: Simply stating "I am Inspector Sharma from the Cyber Cell" is NOT an active threat. Keep risk score under 40 and coaching empty ("") until they proceed to make an allegation or scare tactic.
-2. THE 40+ COACHING RULE: ONLY provide a coaching string if the risk score is 40 or higher. For any risk below 40, coaching MUST be empty ("").
-3. TARGET THE LATEST THREAT: You MUST update your coaching when the scammer escalates. If they shift from a seized package to a digital arrest, your coaching MUST shift to defending against digital arrest. Do not stay stuck on the old threat.
-4. PHASE PRIORITY RULE (CRITICAL): Phases have a strict hierarchy of priority: demand > intimidation > allegation > intro. If the scammer's latest statement contains elements of multiple phases (e.g. they threaten digital arrest AND demand a bank transfer), you MUST classify it as the HIGHER phase (demand) and generate coaching that focuses on the higher phase (e.g. refusing the transfer).
-5. OUT-OF-THE-BOX & STREET-SMART: Coaching MUST be written in the 1st person, as a direct script for the victim to say. Make comebacks sarcastic, confident, and completely unfazed. Expose the scammer's lies.
-6. NO DOCUMENT HALLUCINATIONS: NEVER claim to not have universally owned Indian documents (Aadhaar or PAN). If Aadhaar is mentioned, say you will verify it with the local station.
-7. STRICT CONTEXT MATCHING (CRITICAL): Your comebacks MUST strictly target what the scammer is currently accusing or demanding. If the scammer is only discussing a seized package or customs issue, you MUST ONLY coach the user to verify the package (e.g. tracking number, hub location). You MUST NOT mention digital arrest, police dispatch, or legal rights (lawyer) until the scammer explicitly threatens arrest, jail, or dispatching officers in the transcript. Do not anticipate future threats.
-8. FOCUS ON SCAMMER'S THREATS (CRITICAL): The transcript contains dialogue from both the scammer and the victim. When generating comebacks, ONLY respond to allegations, threats, or demands made by the scammer. DO NOT generate comebacks based on words or questions spoken by the victim (e.g., if the victim says "digital arrest", do NOT trigger the digital arrest comeback unless the scammer also threatened it).
+1. VOICE CLONING COUNTERMEASURES: Coaching MUST be in the 1st person ("I...", "Tell me..."). Focus on defeating synthetic voice deception:
+   - Ask for a personal family/organizational secret code or shared private memory.
+   - Challenge biological liveness: "Say this random phrase right now to prove you are really you."
+   - Break isolation: Insist on hanging up and calling the contact's trusted registered phone number.
+   - Refuse voice-authorized financial demands unconditionally.
+2. NO EARLY ALERTS FOR ROUTINE INTRODUCTIONS: Keep risk under 40 and coaching empty ("") until an emergency pretext, impersonation cue, or financial pressure appears.
+3. THE 40+ COACHING RULE: ONLY provide coaching when risk is 40 or higher.
+4. PHASE PRIORITY RULE: demand > intimidation > allegation > intro.
+5. STRICT CONTEXT MATCHING: Only respond to what the caller has actually stated.
+6. LANGUAGE & MULTILINGUAL CONVERSATION RULES:
+   - The user or caller may speak in Hindi, Hinglish, Marathi, Bengali, Gujarati, Tamil, Telugu, Kannada, or English.
+   - Normal human conversations in ANY language (e.g., greetings like "Namaste", "Kaise ho?", "Kya kar rahe ho?", "Khana khaya?", everyday office/personal check-ins) are 100% AUTHENTIC and SAFE.
+   - You MUST assign risk: 0-25, phase: "intro", coaching: "" for normal conversational speech in any language!
+   - NEVER assume that speaking in Hindi or an Indian regional language is suspicious, fake, or synthetic!
+   - ONLY escalate risk (>= 50) when there is an explicit social engineering threat: fake emergency (police custody, hospital bail, customs parcel seizure, digital arrest), high-pressure isolation ("don't tell anyone", "stay on line"), or unauthorized financial demands (transfer money, share OTP/UPI PIN).
+   - If transcript is predominantly Hindi/Devanagari or Hinglish, provide coaching in natural HINGLISH.
+   - For all other cases, provide coaching in clear, confident ENGLISH.
 
-CRITICAL LANGUAGE RULE:
-1. 90-100% HINDI RULE (PRIORITY): IF AND ONLY IF the entire conversation transcript is overwhelmingly (90%+) in Hindi script (Devanagari), your coaching MUST be entirely in HINGLISH.
-2. DEFAULT TO ENGLISH: For all other cases, your coaching MUST be entirely in ENGLISH.
-3. MIXED LANGUAGE: If the transcript is mostly English or mixed, but contains some Hindi words or names in Devanagari, IGNORE the Devanagari and STAY IN ENGLISH.
-   - Example (English): Transcript is mostly English or mixed. Coaching: "I will verify this with my bank."
-   - Example (Hinglish): Transcript is 90%+ Hindi ("मेरा अकाउंट ब्लॉक हो गया है?"). Coaching: "Mera account kaise block ho gaya? Main bank manager se verify karunga."
-
-Examples of Coaching (For Reference only, do NOT copy words blindly):
-- Allegation: "Oh, a package? Give me the tracking number so I can check it."
-- Intimidation: "Digital arrest is illegal in India. Send your officers to my address, I'll meet them directly."
-- Demand (Money): "I'm not transferring any money. I will verify this with my bank branch manager."`;
+Examples of Voice Cloning Coaching (Reference only):
+- Allegation (Family/Friend): "If this is really you, what is our family secret safe word?"
+- Intimidation (Isolation): "I'm hanging up and calling your verified phone number right now."
+- Demand (Executive/Financial): "I cannot execute any funds transfer without independent out-of-band clearance."`;
 
 /**
  * ─── STRUCTURAL JSON VALIDATION SCHEMAS ───
@@ -181,7 +230,7 @@ export const scoreRisk = async (transcript: string, lastCoaching: string = ''): 
     const transcriptLines = cleanTranscript.trim().split('\n').filter(line => line.trim().length > 0);
     const latestStatements = transcriptLines.slice(-3).join('\n');
 
-    const userContent = `LATEST SCAMMER STATEMENTS FOR EVALUATION:\n${latestStatements}${
+    const userContent = `LATEST CALLER STATEMENTS FOR VOICE CLONING EVALUATION:\n${latestStatements}${
       lastCoaching 
       ? `\n\nPREVIOUS COACHING PROVIDED: "${lastCoaching}"` 
       : ''
@@ -189,14 +238,14 @@ export const scoreRisk = async (transcript: string, lastCoaching: string = ''): 
 
     const response = await executeWithFallback({
       messages: [
-        { role: 'system', content: SCAM_DETECTION_SYSTEM_PROMPT },
+        { role: 'system', content: VOICE_CLONING_DETECTION_SYSTEM_PROMPT },
         { role: 'user', content: userContent }
       ],
       temperature: 0.1,
       max_tokens: 200,
       response_format: { type: 'json_object' }
     });
-    const parsedJson = JSON.parse(response.choices[0].message.content || '{}');
+    const parsedJson = extractJsonFromContent(response.choices[0]?.message?.content || '{}');
     const result = RiskScoreSchema.parse(parsedJson);
     return result;
   } catch (err: any) {
@@ -237,30 +286,50 @@ const ReportSchema = z.object({
 
 export type GeneratedReport = z.infer<typeof ReportSchema>;
 
-export const generateReport = async (transcript: string, peakRiskScore: number, callerNumber: string, callDuration: string): Promise<GeneratedReport | null> => {
+export const generateReport = async (
+  transcript: string, 
+  peakRiskScore: number, 
+  callerNumber: string, 
+  callDuration: string,
+  finalRiskScore?: number,
+  livenessScore?: number | null
+): Promise<GeneratedReport | null> => {
   try {
+    const effectiveFinal = finalRiskScore !== undefined ? finalRiskScore : peakRiskScore;
+    const livenessStatus = livenessScore !== null && livenessScore !== undefined 
+      ? (livenessScore >= 70 ? `PASSED (${livenessScore}/100 - living human prosody verified)` : `FAILED (${livenessScore}/100)`) 
+      : 'Not Tested';
+
     const response = await executeWithFallback({
       messages: [
-        { role: 'system', content: `You are a fraud incident report generator for India. Generate a structured report from this scam call transcript.
-CRITICAL RULE: Ensure perfect spelling and grammar in all your outputs. The audio transcript may contain garbled text, slang, or misspellings from the Speech-to-Text engine. DO NOT blindly copy misspelled words. You MUST correct all spelling errors, fix grammar, and write in highly professional, perfectly spelled English. NEVER hallucinate or output wrongly written words.
+        { role: 'system', content: `You are Dhwani AI's Forensic Voice Cloning Incident Report Generator.
+Generate a structured forensic incident report from this voice interaction.
+Ensure perfect spelling and grammar in all your outputs. Correct any speech-to-text typos in the transcript. Write in professional, highly objective English.
+
+CRITICAL INSTRUCTION ON RESOLVED RISK & SYNTHETIC VOICE:
+If Peak Security Risk Score is >= 40, synthetic voice or neural vocoder manipulation was DETECTED during this recording.
+Even if trailing or leading audio segments sounded natural, humanized, or routine, DO NOT classify the interaction as clean, safe, or "Cleared Suspicious Interaction"!
+Threat actors frequently splice cloned or manipulated voice segments with natural human speech.
+You MUST classify the scamType as an AI Voice Cloning / Voice Manipulation attack (e.g., "AI Voice Cloning (Family Emergency)", "Executive / CFO Voice Clone Fraud", or "Deepfake Authority Impersonation"), highlighting that synthetic voice artifacts were detected during the recording (Peak Risk: ${peakRiskScore}/100).
+If Final Resolved Risk Score is lower than Peak Security Risk Score only due to an active voice liveness challenge being passed, explain that an active challenge was passed but note the initial anomaly.
 
 RESPOND ONLY WITH VALID JSON in this exact format:
 {
-  "summary": "<2 sentence plain English summary>",
-  "scamType": "<Digital Arrest | Sextortion/Blackmail | Tech Support Scam | Fake Emergency/Kidnapping | Job Fraud | Lottery Scam | Harassment/Intimidation | Other>",
-  "redFlags": ["<flag 1>", "<flag 2>"],
-  "psychologicalTactics": ["<tactic 1>", "<tactic 2>"],
-  "evidenceLog": [{"time": "<MM:SS>", "event": "<what happened>"}],
-  "recommendedAction": "<what victim should do now>",
-  "formalComplaintText": "<complete paragraph for police FIR submission>"
+  "summary": "<2 sentence clear technical and operational summary of the interaction and risk resolution>",
+  "scamType": "<AI Voice Cloning (Family Emergency) | Executive / CFO Voice Clone Fraud | Deepfake Authority Impersonation | Synthetic Voice Financial Transfer | AI Voice Replay Attack | Other Voice Cloning Attack | Cleared Suspicious Interaction>",
+  "redFlags": ["<voice artifact or impersonation tactic 1>", "<flag 2>"],
+  "psychologicalTactics": ["<synthetic urgency or isolation tactic 1>", "<tactic 2>"],
+  "evidenceLog": [{"time": "<MM:SS>", "event": "<detected cloning cue, voice test, or demand>"}],
+  "recommendedAction": "<immediate preventative steps: call authentic contact directly, freeze account, or maintain routine vigilance>",
+  "formalComplaintText": "<formal incident report statement suitable for National Cyber Crime Reporting Portal (1930 / cybercrime.gov.in) documenting the event>"
 }` },
-        { role: 'user', content: `Caller Number: ${callerNumber}\nCall Duration: ${callDuration}\nPeak Risk Score: ${peakRiskScore}/100\n\nTRANSCRIPT:\n${maskPIILocally(transcript)}` }
+        { role: 'user', content: `Caller Number: ${callerNumber}\nCall Duration: ${callDuration}\nPeak Security Risk Score: ${peakRiskScore}/100\nFinal Resolved Risk Score: ${effectiveFinal}/100\nActive Voice Liveness Test: ${livenessStatus}\n\nTRANSCRIPT:\n${maskPIILocally(transcript)}` }
       ],
       temperature: 0.2,
       max_tokens: 1500,
       response_format: { type: 'json_object' }
     });
-    const parsedJson = JSON.parse(response.choices[0].message.content || '{}');
+    const parsedJson = extractJsonFromContent(response.choices[0]?.message?.content || '{}');
     const result = ReportSchema.parse(parsedJson);
     return result;
   } catch (err: any) {

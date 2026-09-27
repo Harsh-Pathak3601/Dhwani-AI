@@ -38,12 +38,76 @@ describe('VoiceShield Core Architecture Tests', () => {
         zcr: [0.12],
         pauses: { count: 2, avgDurationMs: 620, uniformity: 0.35 },
         breathingProxy: 0.85,
+        acousticMetrics: {
+          bassRatio: 0.38,
+          speechRms: 0.05,
+          hfCutoffRatio: 0.12,
+          nsdfPeak: 0.72,
+          shimmer: 0.058,
+          jitter: 0.035,
+          mfccSmoothness: 0.40,
+          dynamicRangeDb: 32
+        },
         timestamp: Date.now()
       };
 
       const result = await analyzeVoiceAuthenticity(authenticFeatures);
 
       expect(result.vas).toBeLessThan(45);
+      expect(result.confidence).toBe('sufficient');
+    });
+
+    it('detects commercial expressive AI voice clones (ElevenLabs/CivixShield) with 24kHz shelf & low shimmer', async () => {
+      const expressiveAiFeatures = {
+        melSpec: [0.15, 0.22, 0.45, 0.88, 0.95, 0.92, 0.85, 0.72, 0.55, 0.40],
+        f0: [145.2, 152.4, 138.6, 160.1, 155.0, 142.3, 158.7, 148.9, 152.0], // Expressive pitch variation
+        zcr: [0.08],
+        pauses: { count: 2, avgDurationMs: 450, uniformity: 0.80 },
+        breathingProxy: 0.12,
+        acousticMetrics: {
+          bassRatio: 0.28,
+          speechRms: 0.045,
+          hfCutoffRatio: 0.018, // 24kHz vocoder brickwall shelf
+          nsdfPeak: 0.58,
+          shimmer: 0.012,       // Unnaturally low vocoder glottal shimmer
+          jitter: 0.008,
+          mfccSmoothness: 0.82, // Smooth neural spline trajectory
+          dynamicRangeDb: 16.0  // Studio compressed
+        },
+        timestamp: Date.now()
+      };
+
+      const result = await analyzeVoiceAuthenticity(expressiveAiFeatures);
+
+      expect(result.vas).toBeGreaterThanOrEqual(70);
+      expect(result.confidence).toBe('sufficient');
+      expect(result.artifacts).toContain('hf_vocoder_phase_shelf');
+      expect(result.artifacts).toContain('low_glottal_shimmer_vocoder');
+    });
+
+    it('detects manipulated and voice-conversion audio with high synthetic score', async () => {
+      const manipulatedFeatures = {
+        melSpec: [0.08, 0.12, 0.35, 0.78, 0.85, 0.70, 0.55, 0.40, 0.30, 0.20],
+        f0: [130.0, 130.1, 130.0, 130.2, 130.0, 130.1],
+        zcr: [0.09],
+        pauses: { count: 1, avgDurationMs: 300, uniformity: 0.88 },
+        breathingProxy: 0.08,
+        acousticMetrics: {
+          bassRatio: 0.12,
+          speechRms: 0.035,
+          hfCutoffRatio: 0.015,
+          nsdfPeak: 0.25,
+          shimmer: 0.009,
+          jitter: 0.005,
+          mfccSmoothness: 0.86,
+          dynamicRangeDb: 14.0
+        },
+        timestamp: Date.now()
+      };
+
+      const result = await analyzeVoiceAuthenticity(manipulatedFeatures);
+
+      expect(result.vas).toBeGreaterThanOrEqual(75);
       expect(result.confidence).toBe('sufficient');
     });
   });

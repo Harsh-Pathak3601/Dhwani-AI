@@ -100,18 +100,38 @@ const ReportView = () => {
         className="space-y-4"
       >
         {/* Quick Stats */}
-        <motion.div variants={itemVariants} className="grid grid-cols-2 gap-3">
+        <motion.div variants={itemVariants} className={`grid ${report.finalRiskScore !== undefined ? 'grid-cols-3' : 'grid-cols-2'} gap-3`}>
           <div className="glass-card p-4 flex flex-col">
             <span className="text-white/40 text-[10px] uppercase tracking-wider mb-2 flex items-center gap-1">
               <Hash className="w-3 h-3" /> Caller
             </span>
-            <span className="font-mono text-lg text-white font-medium">{report.callerNumber}</span>
+            <span className="font-mono text-base sm:text-lg text-white font-medium truncate">{report.callerNumber}</span>
           </div>
+
+          {report.finalRiskScore !== undefined && (
+            <div className="glass-card p-4 flex flex-col">
+              <span className="text-white/40 text-[10px] uppercase tracking-wider mb-2 flex items-center gap-1">
+                <CheckCircle className="w-3 h-3 text-emerald-400" /> Resolved Risk
+              </span>
+              <span className={`text-2xl font-bold leading-none ${report.finalRiskScore < 40 ? 'text-emerald-400' : report.finalRiskScore < 70 ? 'text-warning' : 'text-danger'}`}>
+                {report.finalRiskScore}<span className="text-sm opacity-60 font-normal">/100</span>
+              </span>
+              {report.livenessScore ? (
+                <span className="text-[10px] text-emerald-400/80 mt-1 font-mono">Liveness Verified ({report.livenessScore}%)</span>
+              ) : (
+                <span className="text-[10px] text-white/40 mt-1 font-mono">{report.finalRiskScore < 40 ? 'Safe State' : 'Elevated'}</span>
+              )}
+            </div>
+          )}
+
           <div className="glass-card p-4 flex flex-col">
             <span className="text-white/40 text-[10px] uppercase tracking-wider mb-2 flex items-center gap-1">
-              <Activity className="w-3 h-3" /> Peak Risk
+              <Activity className="w-3 h-3 text-orange-400" /> Peak Risk
             </span>
-            <span className="text-2xl font-bold text-danger leading-none">{report.peakRiskScore}<span className="text-sm text-danger/60 font-normal">/100</span></span>
+            <span className={`text-2xl font-bold leading-none ${report.peakRiskScore >= 70 ? 'text-danger' : report.peakRiskScore >= 40 ? 'text-warning' : 'text-emerald-400'}`}>
+              {report.peakRiskScore}<span className="text-sm opacity-60 font-normal">/100</span>
+            </span>
+            <span className="text-[10px] text-white/40 mt-1 font-mono">Session Max</span>
           </div>
         </motion.div>
 

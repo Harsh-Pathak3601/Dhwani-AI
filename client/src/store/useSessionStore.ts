@@ -75,6 +75,8 @@ export interface ReportResult {
   report?: {
     callerNumber: string;
     peakRiskScore: number;
+    finalRiskScore?: number;
+    livenessScore?: number | null;
     scamType: string;
     summary: string;
     redFlags: string[];
@@ -114,6 +116,8 @@ interface SessionState {
   setEvidenceAnchor: (anchor: { recordId: string; evidenceHash: string; ledgerAnchorBlock: number } | null) => void;
   isDemoAttackRunning: boolean;
   setIsDemoAttackRunning: (running: boolean) => void;
+  speechLanguage: string;
+  setSpeechLanguage: (lang: string) => void;
 }
 
 const getSavedCallerNumber = (): string => {
@@ -195,5 +199,14 @@ export const useSessionStore = create<SessionState>((set) => ({
   setEvidenceAnchor: (anchor) => set({ evidenceAnchor: anchor }),
 
   isDemoAttackRunning: false,
-  setIsDemoAttackRunning: (running) => set({ isDemoAttackRunning: running })
+  setIsDemoAttackRunning: (running) => set({ isDemoAttackRunning: running }),
+  speechLanguage: typeof window !== 'undefined' ? (localStorage.getItem('guardcall_language') || 'hi-IN') : 'hi-IN',
+  setSpeechLanguage: (lang) => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('guardcall_language', lang);
+      } catch {}
+    }
+    set({ speechLanguage: lang });
+  }
 }));

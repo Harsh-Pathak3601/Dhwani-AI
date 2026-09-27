@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Smartphone, ShieldCheck, ShieldAlert, X, Check, ArrowRight, Lock, BellRing } from 'lucide-react';
+import { Smartphone, ShieldCheck, ShieldAlert, X, Check, BellRing } from 'lucide-react';
 import { ActiveHoldData } from '../store/useSessionStore';
 
 interface OOBVerificationModalProps {

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { AlertTriangle, ShieldAlert, X, Volume2, ShieldCheck, HelpCircle } from 'lucide-react';
+import { AlertTriangle, ShieldAlert, X, HelpCircle } from 'lucide-react';
 
 interface CoachingCardProps {
   risk: number;

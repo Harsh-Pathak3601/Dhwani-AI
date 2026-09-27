@@ -9,6 +9,8 @@ interface jsPDFWithPlugin extends jsPDF {
 export interface ReportData {
   callerNumber: string;
   peakRiskScore: number;
+  finalRiskScore?: number;
+  livenessScore?: number | null;
   scamType: string;
   summary: string;
   redFlags: string[];

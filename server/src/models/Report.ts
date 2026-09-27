@@ -17,6 +17,8 @@ export interface IReport extends Document {
   recommendedAction?: string;
   formalComplaintText?: string;
   peakRiskScore: number;
+  finalRiskScore?: number;
+  livenessScore?: number | null;
   investigationStatus: 'Suspected' | 'Verified' | 'Needs Review';
   investigatorNotes?: string;
   reviewedBy?: string;
@@ -40,6 +42,8 @@ const reportSchema = new mongoose.Schema<IReport>({
   recommendedAction: { type: String },
   formalComplaintText: { type: String },
   peakRiskScore: { type: Number, required: true },
+  finalRiskScore: { type: Number },
+  livenessScore: { type: Number },
   investigationStatus: { type: String, enum: ['Suspected', 'Verified', 'Needs Review'], default: 'Needs Review', index: true },
   investigatorNotes: { type: String, default: '' },
   reviewedBy: { type: String },

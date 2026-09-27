@@ -26,8 +26,19 @@ const communityReportSchema = z.object({
 
 router.get('/check/:number', checkLimiter, async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { number } = req.params;
-    const report = await CommunityReport.findOne({ callerNumber: number });
+    const rawNumber = Array.isArray(req.params.number) ? req.params.number[0] : req.params.number;
+    const number = rawNumber || '';
+    const clean = number.replace(/\D/g, '').slice(-10);
+    const report = await CommunityReport.findOne({
+      $or: [
+        { callerNumber: number },
+        ...(clean ? [
+          { callerNumber: clean },
+          { callerNumber: `+91${clean}` },
+          { callerNumber: `+91 ${clean}` }
+        ] : [])
+      ]
+    });
     
     if (report) {
       res.json({
@@ -47,8 +58,14 @@ router.get('/check/:number', checkLimiter, async (req: Request, res: Response, n
 router.post('/', validate(communityReportSchema), async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { callerNumber, riskScore } = req.body;
+    const clean = callerNumber.replace(/\D/g, '').slice(-10);
     
-    let report = await CommunityReport.findOne({ callerNumber });
+    let report = await CommunityReport.findOne({
+      $or: [
+        { callerNumber },
+        ...(clean ? [{ callerNumber: clean }] : [])
+      ]
+    });
     
     if (report) {
       const newTotalScore = (report.averageRiskScore * report.reportsCount) + riskScore;

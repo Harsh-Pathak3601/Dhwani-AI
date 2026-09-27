@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion, Variants } from 'framer-motion';
 import type { ReactNode } from 'react';
+import LandingPage from './components/LandingPage';
 import NumberCheck from './components/NumberCheck';
 import ConsentBanner from './components/ConsentBanner';
 import CallSession from './components/CallSession';
@@ -56,6 +57,22 @@ function AnimatedRoutes() {
       <Routes location={location} key={location.pathname}>
         <Route
           path="/"
+          element={
+            <PageWrapper>
+              <LandingPage />
+            </PageWrapper>
+          }
+        />
+        <Route
+          path="/app"
+          element={
+            <PageWrapper>
+              <NumberCheck />
+            </PageWrapper>
+          }
+        />
+        <Route
+          path="/check"
           element={
             <PageWrapper>
               <NumberCheck />

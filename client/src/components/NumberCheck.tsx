@@ -1,11 +1,12 @@
 import { useState, useCallback, useMemo, type ReactNode, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useSessionStore } from '../store/useSessionStore';
 import { checkCommunityDB } from '../services/api';
 import {
   ShieldCheck,
   Phone,
   ArrowRight,
+  ArrowLeft,
   AlertTriangle,
   Cpu,
   FileText,
@@ -70,56 +71,6 @@ function ParticlesBackground() {
   );
 }
 
-/* ─── Pulse Ring Animation around Shield ─── */
-
-function ShieldRadar() {
-  return (
-    <div className="relative flex items-center justify-center w-20 h-20 mx-auto mb-4">
-      {/* Outer pulsing ring 1 */}
-      <motion.div
-        className="absolute inset-0 rounded-3xl bg-primary/10 border border-primary/20"
-        animate={{ scale: [1, 1.35, 1], opacity: [0.6, 0, 0.6] }}
-        transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-      />
-      {/* Outer pulsing ring 2 */}
-      <motion.div
-        className="absolute -inset-2 rounded-3xl bg-primary/5 border border-primary/10"
-        animate={{ scale: [1, 1.5, 1], opacity: [0.4, 0, 0.4] }}
-        transition={{ duration: 2.5, delay: 0.5, repeat: Infinity, ease: 'easeInOut' }}
-      />
-      {/* Core glowing shield container */}
-      <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/25 to-primary/5 border border-primary/40 flex items-center justify-center shadow-lg shadow-primary/20 backdrop-blur-md">
-        <ShieldCheck className="w-8 h-8 text-primary drop-shadow-[0_0_8px_rgba(29,158,117,0.6)]" />
-      </div>
-    </div>
-  );
-}
-
-/* ─── Stat Card ─── */
-
-interface StatCardProps {
-  icon: ReactNode;
-  value: string;
-  label: string;
-  delay: number;
-}
-
-function StatCard({ icon, value, label, delay }: StatCardProps) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.5, delay, ease: [0.25, 0.46, 0.45, 0.94] }}
-      whileHover={{ y: -2, scale: 1.03 }}
-      className="glass-card p-3 flex flex-col items-center gap-1.5 flex-1 min-w-0"
-    >
-      <div className="text-primary/80">{icon}</div>
-      <p className="text-sm font-bold text-textMain tracking-tight">{value}</p>
-      <p className="text-[10px] text-textMain/50 text-center leading-tight">{label}</p>
-    </motion.div>
-  );
-}
-
 /* ─── Feature Pill ─── */
 
 interface FeaturePillProps {
@@ -164,9 +115,9 @@ const NumberCheck = () => {
       try {
         // Database Verification Request:
         // Cross-checks the cleaned number against the community-driven reported numbers database.
-        // If flagged, it sets a localized warning state before proceeding to the consent page.
-        const result = await checkCommunityDB(callerNumber);
-        if (result.flagged) {
+        const cleaned = callerNumber.replace(/\D/g, '').slice(-10) || callerNumber;
+        const result = await checkCommunityDB(cleaned);
+        if (result.flagged || result.reportsCount > 0) {
           setWarning({
             message: `This number has been reported ${result.reportsCount} time${result.reportsCount !== 1 ? 's' : ''} for suspicious activity.`,
             reportsCount: result.reportsCount,
@@ -216,6 +167,16 @@ const NumberCheck = () => {
         animate="visible"
         className="relative z-10 w-full max-w-lg mx-auto px-5 py-8 flex flex-col items-center gap-6"
       >
+        {/* ─── Top Nav ─── */}
+        <motion.div variants={itemVariants} className="w-full flex items-center justify-between text-xs text-textMain/60 px-1 pt-2">
+          <Link to="/" className="inline-flex items-center gap-1.5 hover:text-white transition-colors">
+            <ArrowLeft className="w-3.5 h-3.5" /> Back to Home
+          </Link>
+          <Link to="/dashboard" className="inline-flex items-center gap-1.5 hover:text-primary-light transition-colors">
+            <Shield className="w-3.5 h-3.5" /> Dashboard
+          </Link>
+        </motion.div>
+
         {/* ─── Hero Section ─── */}
         <motion.div variants={itemVariants} className="flex flex-col items-center gap-3 pt-4 text-center">
 

@@ -1,4 +1,5 @@
 import logger from '../utils/logger.js';
+import { classifyVoiceAcousticML } from './voiceMlClassifier.js';
 
 export interface AudioFeaturesPayload {
   melSpec?: number[];
@@ -12,6 +13,17 @@ export interface AudioFeaturesPayload {
     uniformity: number; // 0 to 1, higher = machine uniform
   };
   breathingProxy?: number; // 0 to 1, higher = natural breath detected
+  acousticMetrics?: {
+    bassRatio?: number;
+    speechRms?: number;
+    hfCutoffRatio?: number;
+    nsdfPeak?: number;
+    shimmer?: number;
+    jitter?: number;
+    mfccSmoothness?: number;
+    dynamicRangeDb?: number;
+    f0Curvature?: number;
+  };
   windowType?: 'short' | 'medium' | 'long';
   timestamp?: number;
 }
@@ -100,145 +112,21 @@ function calculateDeltaSmoothness(series: number[]): number {
 export async function analyzeVoiceAuthenticity(features: AudioFeaturesPayload): Promise<Stage1AuthResult> {
   const startTime = Date.now();
 
-  // 1. Latency budget check
-  if (features.timestamp && (startTime - features.timestamp > 450)) {
-    logger.warn('Audio feature window dropped due to stale latency budget (>450ms)', {
-      latency: startTime - features.timestamp
-    });
-    return {
-      vas: 50,
-      confidence: 'insufficient',
-      artifacts: ['stale_audio_window'],
-      model: 'heuristic',
-      processingTimeMs: Date.now() - startTime,
-      isStale: true,
-      details: {
-        pitchJitter: 0,
-        spectralSmoothness: 0,
-        mfccSmoothness: 0,
-        pauseUniformity: 0,
-        breathIndex: 0
-      }
-    };
-  }
-
-  const artifacts: string[] = [];
-  let syntheticEvidencePoints = 0;
-  let totalChecks = 0;
-
-  // Check data sufficiency: require actual voiced speech (F0) to evaluate synthesis
-  const voicedF0 = features.f0 ? features.f0.filter(v => v > 60 && v < 500) : [];
-  const hasVoicedF0 = voicedF0.length >= 5;
-  const hasMfcc = Boolean(features.mfcc && features.mfcc.length >= 8);
-  const hasMel = Boolean(features.melSpec && features.melSpec.length >= 4);
-
-  if (!hasVoicedF0 || !hasMfcc) {
-    return {
-      vas: 0,
-      confidence: 'insufficient',
-      artifacts: ['insufficient_audio_signal'],
-      model: 'heuristic',
-      processingTimeMs: Date.now() - startTime,
-      details: {
-        pitchJitter: 0.045,
-        spectralSmoothness: 0.35,
-        mfccSmoothness: 0.35,
-        pauseUniformity: 0.2,
-        breathIndex: 0.6
-      }
-    };
-  }
-
-  const hasF0 = true;
-
-  // Feature 1: F0 Pitch Jitter
-  const pitchJitter = hasF0 ? calculateJitter(features.f0!) : 0.035;
-  totalChecks += 25;
-  if (pitchJitter < 0.012) {
-    // Machine-perfect pitch curve (<1.2% jitter)
-    syntheticEvidencePoints += 25;
-    artifacts.push('f0_too_regular');
-  } else if (pitchJitter < 0.022) {
-    syntheticEvidencePoints += 12;
-    artifacts.push('low_pitch_microvariation');
-  }
-
-  // Feature 2: MFCC Delta Smoothness
-  const mfccSmoothness = hasMfcc ? calculateDeltaSmoothness(features.mfcc!) : 0.45;
-  totalChecks += 20;
-  if (mfccSmoothness > 0.82) {
-    syntheticEvidencePoints += 20;
-    artifacts.push('mfcc_too_smooth');
-  } else if (mfccSmoothness > 0.68) {
-    syntheticEvidencePoints += 10;
-  }
-
-  // Feature 3: Spectral Flux Variance (Vocoder Harmonic Flatness)
-  const spectralSmoothness = hasMel ? calculateDeltaSmoothness(features.melSpec!) : 0.5;
-  totalChecks += 20;
-  if (spectralSmoothness > 0.80) {
-    syntheticEvidencePoints += 20;
-    artifacts.push('spectral_smoothness');
-  }
-
-  // Feature 4: Pause Uniformity
-  const pauseUniformity = features.pauses?.uniformity ?? 0.3;
-  totalChecks += 15;
-  if (pauseUniformity > 0.78) {
-    syntheticEvidencePoints += 15;
-    artifacts.push('tts_pause_regularity');
-  }
-
-  // Feature 5: Breathing Proxy
-  const breathIndex = features.breathingProxy ?? 0.5;
-  totalChecks += 20;
-  if (breathIndex < 0.15) {
-    syntheticEvidencePoints += 20;
-    artifacts.push('no_breathing_proxy');
-  } else if (breathIndex < 0.28) {
-    syntheticEvidencePoints += 10;
-  }
-
-  // Compute Base Heuristic VAS (0-100)
-  const heuristicVAS = Math.round((syntheticEvidencePoints / totalChecks) * 100);
-
-  // Model Cascade: lightweight AASIST spoof classifier simulation & heavy Wav2Vec2-XLSR
-  let finalVAS = heuristicVAS;
-  let chosenModel: 'heuristic' | 'aasist' | 'wav2vec2_xlsr' = 'aasist';
-
-  // In production, AASIST runs ONNX INT8 quantized model.
-  // We blend AASIST calibrated probabilistic output with our acoustic physical heuristics:
-  const aasistWeight = 0.65;
-  const heuristicWeight = 0.35;
-  const aasistEstimatedSpoof = Math.min(100, Math.max(0, Math.round(heuristicVAS * 1.05 + (artifacts.length >= 2 ? 10 : -8))));
-  finalVAS = Math.round((aasistEstimatedSpoof * aasistWeight) + (heuristicVAS * heuristicWeight));
-
-  // Cascade to heavy Wav2Vec2-XLSR if score is borderline (45-65)
-  if (finalVAS >= 45 && finalVAS <= 65) {
-    chosenModel = 'wav2vec2_xlsr';
-    // Deep representation resolution refines borderline confidence
-    const refinedVAS = artifacts.includes('f0_too_regular') || artifacts.includes('spectral_smoothness')
-      ? finalVAS + 12
-      : finalVAS - 10;
-    finalVAS = Math.min(100, Math.max(0, refinedVAS));
-    artifacts.push('heavy_cascade_resolved');
-  }
-
-  const confidence: 'sufficient' | 'insufficient' = 
-    (hasF0 && hasMfcc) ? 'sufficient' : 'insufficient';
+  // 1. Stage 1 Neural ML Classifier Execution (AASIST / Acoustic MLP)
+  const mlResult = classifyVoiceAcousticML(features);
 
   return {
-    vas: Math.min(100, Math.max(0, finalVAS)),
-    confidence,
-    artifacts: Array.from(new Set(artifacts)),
-    model: chosenModel,
-    processingTimeMs: Date.now() - startTime,
+    vas: mlResult.vas,
+    confidence: mlResult.confidence,
+    artifacts: mlResult.artifacts,
+    model: mlResult.model,
+    processingTimeMs: Math.max(1, Date.now() - startTime),
     details: {
-      pitchJitter,
-      spectralSmoothness,
-      mfccSmoothness,
-      pauseUniformity,
-      breathIndex
+      pitchJitter: mlResult.metrics.pitchJitter,
+      spectralSmoothness: mlResult.metrics.spectralFlatness,
+      mfccSmoothness: mlResult.metrics.mfccSmoothness,
+      pauseUniformity: mlResult.metrics.pauseUniformity,
+      breathIndex: mlResult.metrics.breathIndex
     }
   };
 }

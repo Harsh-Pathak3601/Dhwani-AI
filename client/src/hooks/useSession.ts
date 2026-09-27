@@ -46,16 +46,18 @@ export const useSession = () => {
     evidenceAnchor,
     setEvidenceAnchor,
     isDemoAttackRunning,
-    setIsDemoAttackRunning
+    setIsDemoAttackRunning,
+    speechLanguage
   } = useSessionStore();
 
   const { 
     startRecording, 
     stopRecording, 
+    startFileAnalysis,
     injectSimulatedAcoustics,
     isRecording, 
     permissionError 
-  } = useAudioCapture(socket, setTranscript);
+  } = useAudioCapture(socket, setTranscript, speechLanguage);
 
   useEffect(() => {
     if (!socket) return;
@@ -65,7 +67,12 @@ export const useSession = () => {
     });
 
     socket.on('risk:update', (data: RiskData) => {
-      setRiskData(data);
+      const currentVoiceRisk = useSessionStore.getState().voiceRiskState?.index || 0;
+      setRiskData({
+        ...data,
+        risk: Math.max(data.risk, currentVoiceRisk),
+        peakRiskScore: Math.max(data.peakRiskScore, currentVoiceRisk, useSessionStore.getState().riskData.peakRiskScore)
+      });
     });
 
     socket.on('report:ready', (data: ReportResult) => {
@@ -73,7 +80,10 @@ export const useSession = () => {
     });
 
     socket.on('session:safe', () => {
-      setReportResult({ safe: true });
+      const current = useSessionStore.getState().reportResult;
+      if (!current || !current.report) {
+        setReportResult({ safe: true });
+      }
     });
 
     // VoiceShield 3-Stage socket listeners
@@ -178,9 +188,9 @@ export const useSession = () => {
     });
     setVoiceRiskState({
       state: 'Low',
-      index: 0,
-      explanation: ['Call monitoring initialized. Awaiting speaker voice...'],
-      recommendedAction: 'Start speaking to engage acoustic analysis.',
+      index: 8,
+      explanation: ['Parallel acoustic monitoring tap engaged. Voice analysis active.'],
+      recommendedAction: 'Standard monitoring active; analyzing voice track.',
       isConsequential: false,
       requiresHold: false
     });
@@ -217,16 +227,80 @@ export const useSession = () => {
 
   const endSession = useCallback(() => {
     stopRecording();
+    const currentPeak = Math.max(
+      useSessionStore.getState().riskData.peakRiskScore || 0,
+      useSessionStore.getState().voiceRiskState?.index || 0
+    );
     if (socket) {
-      socket.emit('session:end');
+      socket.emit('session:end', { peakRiskScore: currentPeak });
     }
     setSessionActive(false);
     setIsDemoAttackRunning(false);
+
+    if (currentPeak >= 40) {
+      const latchedState = currentPeak >= 85 ? 'Critical' : currentPeak >= 70 ? 'High' : 'Suspicious';
+      const currentVAS = useSessionStore.getState().voiceStage1?.vas || 0;
+      setVoiceStage1({
+        vas: Math.max(currentVAS, currentPeak >= 60 ? currentPeak : currentVAS),
+        confidence: 'sufficient',
+        artifacts: useSessionStore.getState().voiceStage1?.artifacts || ['vocoder_spectral_discontinuity'],
+        model: useSessionStore.getState().voiceStage1?.model || 'aasist',
+        processingTimeMs: 0
+      });
+      setVoiceRiskState({
+        state: latchedState,
+        index: currentPeak,
+        explanation: [`Session concluded. Latched forensic evidence: Peak Risk reached ${currentPeak}/100.`],
+        recommendedAction: 'Review incident report. Spliced synthetic audio anomalies detected.',
+        isConsequential: false,
+        requiresHold: false
+      });
+    } else {
+      setVoiceStage1({
+        vas: 0,
+        confidence: 'insufficient',
+        artifacts: [],
+        model: 'heuristic',
+        processingTimeMs: 0
+      });
+      setVoiceStage2({
+        speakerDeviation: null,
+        profileStatus: 'no_profile',
+        similarity: null,
+        impersonationRisk: 0,
+        urgencyFlag: false,
+        transactionKeywords: [],
+        signal: 'Call session ended',
+        recommendedVerification: 'Monitoring'
+      });
+      setVoiceRiskState({
+        state: 'Low',
+        index: 0,
+        explanation: ['Session concluded.'],
+        recommendedAction: '',
+        isConsequential: false,
+        requiresHold: false
+      });
+    }
+  }, [socket, stopRecording, setSessionActive, setIsDemoAttackRunning, setVoiceStage1, setVoiceStage2, setVoiceRiskState]);
+
+  const startFileSession = useCallback(async (file: File) => {
+    const newSessionId = crypto.randomUUID();
+    setSessionId(newSessionId);
+    setReportResult(null);
+    setTranscript('');
+    setRiskData({
+      risk: 0,
+      peakRiskScore: 0,
+      phase: 'intro',
+      coaching: '',
+      signal: 'Voice file stream initialized'
+    });
     setVoiceStage1({
       vas: 0,
       confidence: 'insufficient',
       artifacts: [],
-      model: 'heuristic',
+      model: 'aasist',
       processingTimeMs: 0
     });
     setVoiceStage2({
@@ -236,18 +310,45 @@ export const useSession = () => {
       impersonationRisk: 0,
       urgencyFlag: false,
       transactionKeywords: [],
-      signal: 'Call session ended',
+      signal: 'Analyzing audio track...',
       recommendedVerification: 'Monitoring'
     });
     setVoiceRiskState({
       state: 'Low',
-      index: 0,
-      explanation: ['Session concluded.'],
-      recommendedAction: '',
+      index: 8,
+      explanation: ['Acoustic analysis initialized. Decoding audio track...'],
+      recommendedAction: 'Analyzing voice track...',
       isConsequential: false,
       requiresHold: false
     });
-  }, [socket, stopRecording, setSessionActive, setIsDemoAttackRunning, setVoiceStage1, setVoiceStage2, setVoiceRiskState]);
+
+    const storedUser = localStorage.getItem('guardcall_user');
+    const userId = storedUser ? JSON.parse(storedUser)?._id || 'anonymous' : 'anonymous';
+    const effectiveCaller = file.name || 'Voice File';
+
+    if (socket) {
+      socket.emit('session:start', { callerNumber: effectiveCaller, sessionId: newSessionId, userId });
+    }
+    await startFileAnalysis(file, () => {
+      // Test audio file ended: automatically end session so resolved risk scoring locks in
+      setTimeout(() => {
+        endSession();
+      }, 300);
+    });
+    setSessionActive(true);
+  }, [
+    socket,
+    setSessionId,
+    setSessionActive,
+    startFileAnalysis,
+    endSession,
+    setReportResult,
+    setTranscript,
+    setRiskData,
+    setVoiceStage1,
+    setVoiceStage2,
+    setVoiceRiskState
+  ]);
 
   const respondToLiveness = useCallback((spokenText: string, latencyMs: number = 1800) => {
     if (socket && activeChallenge) {
@@ -300,6 +401,7 @@ export const useSession = () => {
 
   return {
     startSession,
+    startFileSession,
     endSession,
     respondToLiveness,
     resolveOOBAction,

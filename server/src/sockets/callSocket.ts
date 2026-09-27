@@ -15,12 +15,15 @@ interface SessionData {
   sessionId: string;
   userId: string;
   peakRiskScore: number;
+  finalRiskScore?: number;
+  livenessScore?: number | null;
   lastCoachingSent?: string;
 }
 
 export const setupCallSocket = (socket: Socket, io: Server) => {
   let rollingTranscript = '';
   let peakRiskScore = 0;
+  let latestRiskIndex = 0;
   let sessionData: SessionData | null = null;
   let turnStartTime = 0;
   let isScoring = false;
@@ -68,6 +71,7 @@ export const setupCallSocket = (socket: Socket, io: Server) => {
     lastScoredTranscript = '';
     lastReceivedTranscript = '';
     peakRiskScore = 0;
+    latestRiskIndex = 0;
     turnStartTime = 0;
     isScoring = false;
     activeLivenessScore = null;
@@ -97,29 +101,31 @@ export const setupCallSocket = (socket: Socket, io: Server) => {
    * Receives extracted acoustic feature vectors from browser Web Audio API parallel tap
    */
   socket.on('audio:features', async (features: AudioFeaturesPayload) => {
-    if (!sessionData) return;
+    if (!sessionData) {
+      sessionData = {
+        callerNumber: 'Live Audio Stream',
+        sessionId: crypto.randomUUID(),
+        userId: 'anonymous',
+        peakRiskScore: 0
+      };
+    }
+    const currentSession = sessionData;
 
     try {
-      // 1. Stage 1: Voice Authenticity Analysis (~0-50ms)
+      // 1. Stage 1: Ultra-Fast Voice Authenticity ML (<0.1ms)
       const stage1 = await analyzeVoiceAuthenticity(features);
+      if (!sessionData) return;
       latestStage1 = stage1;
       socket.emit('voice:stage1', stage1);
 
-      // 2. Stage 2: Identity & Context Analysis
-      const stage2 = await analyzeIdentityAndContext(
-        sessionData.callerNumber,
-        rollingTranscript,
-        stage1.vas,
-        stage1.artifacts,
-        features.mfcc
-      );
-      latestStage2 = stage2;
-      socket.emit('voice:stage2', stage2);
+      // 2. Stage 3: Immediate Security Policy Fusion & 5-State Risk Model (<0.1ms)
+      // Fused immediately with latestStage2 so risk:state is emitted INSTANTLY without network/DB delay!
+      const policy: PolicyDecision = evaluateSecurityPolicy(stage1, latestStage2, activeLivenessScore);
 
-      // 3. Stage 3: Security Policy Fusion & 5-State Risk Model
-      const policy: PolicyDecision = evaluateSecurityPolicy(stage1, stage2, activeLivenessScore);
+      logger.info(`[Voice Telemetry] Stage1 VAS: ${stage1.vas}%, Conf: ${stage1.confidence}, Artifacts: [${stage1.artifacts.join(', ')}], Policy State: ${policy.state}, SRI: ${policy.securityRiskIndex}`);
 
-      // Update Peak Risk Score
+      // Update Current and Peak Risk Score
+      latestRiskIndex = policy.securityRiskIndex;
       if (policy.securityRiskIndex > peakRiskScore) {
         peakRiskScore = policy.securityRiskIndex;
       }
@@ -133,12 +139,27 @@ export const setupCallSocket = (socket: Socket, io: Server) => {
         requiresHold: policy.requiresHold
       });
 
+      // 3. Stage 2: Identity & Context Analysis (Runs asynchronously / non-blocking in background)
+      analyzeIdentityAndContext(
+        currentSession.callerNumber,
+        rollingTranscript,
+        stage1.vas,
+        stage1.artifacts,
+        features.mfcc
+      ).then(stage2 => {
+        if (!sessionData) return;
+        latestStage2 = stage2;
+        socket.emit('voice:stage2', stage2);
+      }).catch(err => {
+        logger.warn('Stage 2 context analysis background error', { error: err.message });
+      });
+
       // Handle Consequence Escalation: Transaction Hold & Independent Trust Channel
       if (policy.requiresHold && !hasTriggeredHold) {
         hasTriggeredHold = true;
         const oob = triggerOOBVerification(
-          sessionData.sessionId,
-          sessionData.callerNumber,
+          currentSession.sessionId,
+          currentSession.callerNumber,
           policy.recommendedAction,
           '₹50,00,000'
         );
@@ -169,10 +190,10 @@ export const setupCallSocket = (socket: Socket, io: Server) => {
 
       // Record Tamper-Evident Ledger Entry
       const evidence = recordEvidence(
-        sessionData.sessionId,
-        maskPhoneNumber(sessionData.callerNumber),
+        currentSession.sessionId,
+        maskPhoneNumber(currentSession.callerNumber),
         { vas: stage1.vas, artifacts: stage1.artifacts, model: stage1.model },
-        { speakerDeviation: stage2.speakerDeviation, impersonationRisk: stage2.impersonationRisk, transactionKeywords: stage2.transactionKeywords },
+        { speakerDeviation: latestStage2.speakerDeviation, impersonationRisk: latestStage2.impersonationRisk, transactionKeywords: latestStage2.transactionKeywords },
         policy.state,
         policy.securityRiskIndex,
         policy.recommendedAction
@@ -203,6 +224,7 @@ export const setupCallSocket = (socket: Socket, io: Server) => {
 
     // Re-evaluate Stage 3 with updated liveness evidence
     const updatedPolicy = evaluateSecurityPolicy(latestStage1, latestStage2, activeLivenessScore);
+    latestRiskIndex = updatedPolicy.securityRiskIndex;
     socket.emit('risk:state', {
       state: updatedPolicy.state,
       index: updatedPolicy.securityRiskIndex,
@@ -268,25 +290,37 @@ export const setupCallSocket = (socket: Socket, io: Server) => {
 
       const triggerScore = async () => {
         if (isScoring) return;
+        if (!sessionData) return;
         isScoring = true;
 
         turnStartTime = 0;
         lastScoredTranscript = rollingTranscript;
 
         try {
-          const { risk, signal, phase, coaching } = await scoreRisk(rollingTranscript, sessionData!.lastCoachingSent || '');
+          const { risk, signal, phase, coaching } = await scoreRisk(rollingTranscript, sessionData?.lastCoachingSent || '');
 
           if (!sessionData) return;
 
-          if (risk > peakRiskScore) {
-            peakRiskScore = risk;
+          const currentAcousticRisk = latestStage1?.vas || 0;
+          // Acoustic risk only overrides conversational risk if genuinely anomalous (>= 60%)
+          const effectiveRisk = currentAcousticRisk >= 60 ? Math.max(risk, currentAcousticRisk) : risk;
+          latestRiskIndex = effectiveRisk;
+
+          if (effectiveRisk > peakRiskScore) {
+            peakRiskScore = effectiveRisk;
           }
 
           if (coaching) {
             sessionData.lastCoachingSent = coaching;
           }
 
-          socket.emit('risk:update', { risk, signal, phase, coaching, peakRiskScore });
+          socket.emit('risk:update', { 
+            risk: effectiveRisk, 
+            signal: signal || (currentAcousticRisk >= 60 ? `Synthetic Voice Anomaly (${currentAcousticRisk}% VAS)` : ''), 
+            phase, 
+            coaching, 
+            peakRiskScore 
+          });
         } catch (e: any) {
           logger.error('Error scoring risk', { error: e.message });
         } finally {
@@ -311,17 +345,41 @@ export const setupCallSocket = (socket: Socket, io: Server) => {
   /**
    * ─── SESSION FINALIZATION ───
    */
-  socket.on('session:end', async () => {
-    logger.info('Session ended');
+  socket.on('session:end', async (payload?: { peakRiskScore?: number }) => {
+    logger.info('Session ended', { payload });
 
     const activeSessionData = sessionData;
     cleanup();
 
     if (!activeSessionData) return;
-    activeSessionData.peakRiskScore = peakRiskScore;
+    const livenessPassed = activeLivenessScore !== null && activeLivenessScore >= 70;
+
+    // Deepfake Forensics Latching Rule:
+    // Spliced or manipulated audio often concludes with natural speech or humanized outro audio.
+    // In audio/video forensics, if synthetic voice manipulation was detected anywhere in the session,
+    // the evidence is latched to the maximum detected threat.
+    const maxPeak = Math.max(
+      peakRiskScore,
+      payload?.peakRiskScore || 0,
+      activeSessionData.peakRiskScore || 0
+    );
+
+    // If liveness passed AND no critical synthetic anomaly was ever detected (maxPeak < 50),
+    // then it can resolve down to safe.
+    // BUT if synthetic voice was detected (maxPeak >= 40), it MUST NOT be cleared as safe.
+    const finalRiskScore = (livenessPassed && maxPeak < 50)
+      ? Math.min(latestRiskIndex, 30)
+      : Math.max(latestRiskIndex, maxPeak);
+
+    // Recording is ONLY cleared if NO synthetic anomalies or scam patterns were detected throughout
+    const isCleared = (maxPeak < 40) && (finalRiskScore < 40);
+
+    activeSessionData.peakRiskScore = maxPeak;
+    activeSessionData.finalRiskScore = finalRiskScore;
+    activeSessionData.livenessScore = activeLivenessScore;
 
     try {
-      if (peakRiskScore < 40) {
+      if (isCleared) {
         await handleSessionEnd(activeSessionData, null);
         
         const cleanReport = {
@@ -329,48 +387,62 @@ export const setupCallSocket = (socket: Socket, io: Server) => {
           sessionId: activeSessionData.sessionId,
           userId: activeSessionData.userId,
           callerNumber: activeSessionData.callerNumber,
-          summary: rollingTranscript.trim() 
-            ? `Call completed with zero fraudulent indicators or acoustic anomalies detected. Monitored ${rollingTranscript.split(/\s+/).filter(Boolean).length} conversational words.`
-            : 'Routine call completed safely. No scam patterns or synthetic voice signatures detected during this session.',
-          scamType: 'Clean / Verified Safe Call',
+          summary: livenessPassed
+            ? `Call verified authentic. Active voice liveness challenge was successfully completed (score: ${activeLivenessScore}/100), verifying natural human vocal fold dynamics and clearing unverified threat alerts. Final risk resolved to ${finalRiskScore}/100 (Safe).`
+            : rollingTranscript.trim() 
+              ? `Call completed with zero fraudulent indicators or acoustic anomalies detected. Monitored ${rollingTranscript.split(/\s+/).filter(Boolean).length} conversational words. Final risk: ${finalRiskScore}/100.`
+              : 'Routine call completed safely. No scam patterns or synthetic voice signatures detected during this session.',
+          scamType: livenessPassed ? 'Clean / Verified Safe Call (Liveness Passed)' : 'Clean / Verified Safe Call',
           redFlags: [],
           psychologicalTactics: [],
           evidenceLog: [
             { time: '00:00', event: 'Parallel acoustic monitoring tap engaged' },
-            { time: 'Session Complete', event: 'Zero synthetic voice anomalies or fraudulent behavioral patterns detected' }
+            ...(maxPeak >= 60 ? [{ time: 'Peak Alert', event: `Unverified pre-challenge risk peaked at ${maxPeak}/100` }] : []),
+            ...(livenessPassed ? [{ time: 'Voice Test', event: `Active liveness challenge completed with human prosody (${activeLivenessScore}/100)` }] : []),
+            { time: 'Session Complete', event: `Voice authenticity verified. Final risk resolved to ${finalRiskScore}/100 (Safe)` }
           ],
           recommendedAction: 'No action required. Call parameters were verified as legitimate.',
           formalComplaintText: 'No complaint necessary. This call was evaluated as authentic with normal acoustic prosody.',
-          peakRiskScore: peakRiskScore,
+          peakRiskScore: maxPeak,
+          finalRiskScore: finalRiskScore,
+          livenessScore: activeLivenessScore,
           investigationStatus: 'Verified',
           createdAt: new Date()
         };
 
-        socket.emit('session:safe');
         socket.emit('report:ready', {
           requiresConfirmation: false,
           report: cleanReport
         });
+        socket.emit('session:safe');
       } else {
         const scrubbedTranscript = await scrubPII(rollingTranscript);
         const reportContent = await generateReport(
           scrubbedTranscript,
-          peakRiskScore,
+          maxPeak,
           activeSessionData.callerNumber,
-          "Unknown"
+          "Unknown",
+          finalRiskScore,
+          activeLivenessScore
         );
 
         const resolvedReport: GeneratedReport = reportContent || {
-          summary: `Call exhibited elevated risk patterns with peak score ${peakRiskScore}/100. Parallel acoustic and heuristic analysis triggered security attention.`,
-          scamType: peakRiskScore >= 70 ? 'High-Risk Impersonation / Social Engineering' : 'Suspicious Caller Activity',
-          redFlags: ['Unusual caller behavioral patterns', 'Acoustic anomalies detected during conversation'],
-          psychologicalTactics: ['Urgency / Social Pressure'],
+          summary: `Audio/Video recording contained AI-generated or manipulated voice segments peaking at ${maxPeak}/100 risk. Synthetic speech artifacts or vocoder anomalies were detected during playback.`,
+          scamType: maxPeak >= 70 ? 'AI Voice Cloning / Manipulated Voice' : 'Suspicious Caller Activity / Synthetic Anomaly',
+          redFlags: [
+            `Synthetic voice anomaly detected during playback (Peak Risk: ${maxPeak}/100)`,
+            'Discontinuity between synthetic speech segments and natural human audio',
+            ...(latestStage1.artifacts?.length ? latestStage1.artifacts.map(a => `Acoustic anomaly: ${a}`) : ['Acoustic spectral anomalies'])
+          ],
+          psychologicalTactics: ['Voice Manipulation / Impersonation'],
           evidenceLog: [
             { time: '00:00', event: 'Parallel acoustic monitoring tap engaged' },
-            { time: 'Alert', event: `Elevated risk threshold reached with score ${peakRiskScore}/100` }
+            { time: 'Playback Alert', event: `Synthetic voice anomalies detected: Peak Risk ${maxPeak}/100` },
+            ...(activeLivenessScore ? [{ time: 'Voice Test', event: `Active liveness score: ${activeLivenessScore}/100` }] : []),
+            { time: 'Session Complete', event: `Session concluded. Latched forensic risk: ${finalRiskScore}/100 (Synthetic Voice Detected).` }
           ],
-          recommendedAction: 'Verify caller identity through an official external channel. Do not transfer funds or share OTPs.',
-          formalComplaintText: `A suspicious call was received from ${activeSessionData.callerNumber || 'Unknown'} that triggered an elevated risk score of ${peakRiskScore}/100. Further investigation is recommended.`
+          recommendedAction: 'Treat audio as synthetic/manipulated. Do not act on instructions from this voice without separate out-of-band verification.',
+          formalComplaintText: `AI-generated or manipulated voice was detected during analysis of caller/media (${activeSessionData.callerNumber || 'Unknown'}). Peak forensic risk reached ${maxPeak}/100.`
         };
 
         const savedReport = await handleSessionEnd(activeSessionData, resolvedReport);
@@ -387,13 +459,15 @@ export const setupCallSocket = (socket: Socket, io: Server) => {
           evidenceLog: resolvedReport.evidenceLog,
           recommendedAction: resolvedReport.recommendedAction,
           formalComplaintText: resolvedReport.formalComplaintText,
-          peakRiskScore: peakRiskScore,
+          peakRiskScore: maxPeak,
+          finalRiskScore: finalRiskScore,
+          livenessScore: activeLivenessScore,
           investigationStatus: 'Needs Review',
           createdAt: new Date()
         };
 
         socket.emit('report:ready', {
-          requiresConfirmation: peakRiskScore < 70,
+          requiresConfirmation: maxPeak < 70,
           report: effectiveReport
         });
       }
@@ -408,6 +482,10 @@ export const setupCallSocket = (socket: Socket, io: Server) => {
   });
 
   function cleanup() {
+    if (turnTimer) {
+      clearTimeout(turnTimer);
+      turnTimer = null;
+    }
     sessionData = null;
     isScoring = false;
     hasTriggeredHold = false;

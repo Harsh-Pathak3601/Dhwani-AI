@@ -1,14 +1,17 @@
 import crypto from 'crypto';
 import mongoose from 'mongoose';
 import SpeakerProfile, { ISpeakerProfile } from '../models/SpeakerProfile.js';
-import Groq from 'groq-sdk';
+import { executeWithFallback, extractJsonFromContent } from './groqService.js';
 import logger from '../utils/logger.js';
 
-let groqInstance: Groq | null = null;
-const getGroq = () => {
-  if (!groqInstance) groqInstance = new Groq({ apiKey: process.env.GROQ_API_KEY });
-  return groqInstance;
-};
+interface Stage2CacheEntry {
+  transcript: string;
+  timestamp: number;
+  impersonationRisk: number;
+  signal: string;
+  recommendedVerification: string;
+}
+const stage2LlmCache = new Map<string, Stage2CacheEntry>();
 
 export interface Stage2IdentityResult {
   speakerDeviation: number | null; // e.g., 2.8 sigma from historical baseline, null if no profile
@@ -127,23 +130,34 @@ export async function analyzeIdentityAndContext(
   const matchedKeywords = criticalFinancialTerms.filter(kw => lowerTranscript.includes(kw));
   const hasUrgency = /immediate|right now|hurry|emergency|urgent|jail|arrest|blocked within/i.test(transcript);
 
-  // 3. Contextual Enrichment via Groq LLM (Fallback to fast heuristic if API key is not present or rate limited)
+  // 3. Contextual Enrichment via Groq LLM (with transcript caching to prevent per-second LLM spamming)
   let impersonationRisk = profileStatus === 'deviated' ? 60 : 0;
   let signal = 'Normal conversational baseline';
   let recommendedVerification = 'Standard in-call monitoring';
 
-  if (process.env.GROQ_API_KEY && transcript.trim().length > 15) {
+  const cacheKey = `${callerNumber}_${transcript.trim().slice(-100)}`;
+  const cachedLlm = stage2LlmCache.get(cacheKey);
+
+  if (cachedLlm && (Date.now() - cachedLlm.timestamp < 10000)) {
+    impersonationRisk = cachedLlm.impersonationRisk;
+    signal = cachedLlm.signal;
+    recommendedVerification = cachedLlm.recommendedVerification;
+  } else if (process.env.GROQ_API_KEY && transcript.trim().length > 15) {
     try {
       const prompt = `You are the Stage 2 Identity & Context Engine of VoiceShield (an AI voice cloning protection platform).
 Analyze this interaction context for social-engineering impersonation cues:
 
 - Caller Number: ${callerNumber || 'Unknown'} (${profileStatus === 'no_profile' ? 'First-seen caller, NO reference profile' : profileStatus})
-- Stage 1 Voice Authenticity Score: ${vas}% synthetic (Detected acoustic artifacts: ${artifacts.join(', ') || 'None'})
+- Stage 1 Voice Authenticity: ${vas < 35 ? `Verified Authentic Human Voice (${vas}% synthetic)` : `${vas}% synthetic (Artifacts: ${artifacts.join(', ') || 'None'})`}
 - Speaker Profile Deviation: ${speakerDeviation !== null ? speakerDeviation + ' sigma deviation from known enrolled voiceprint' : 'No enrolled voiceprint available'}
 - Transcript: "${transcript.slice(-400)}"
 - Matched Sensitive Keywords: ${matchedKeywords.join(', ') || 'None'}
 
-Assess whether this caller is attempting an impersonation or financial fraud scam.
+CRITICAL RULES:
+- The caller may speak in Hindi, Hinglish, or English. Normal conversational speech and casual check-ins are 100% authentic (impersonationRisk: 0-20).
+- Do NOT flag regional language speech as an impersonation scam!
+- Only flag impersonationRisk >= 50 if the caller impersonates an authority (police, CBI, customs, doctor) or family member with an artificial emergency demanding money, OTP, or secrecy.
+
 RESPOND ONLY IN VALID JSON:
 {
   "impersonationRisk": <number 0-100>,
@@ -152,42 +166,57 @@ RESPOND ONLY IN VALID JSON:
   "recommendedVerification": "<e.g. 'Push confirmation to registered banking app' | 'Request video verification' | 'None'>"
 }`;
 
-      const response = await getGroq().chat.completions.create({
-        model: 'llama-3.1-8b-instant',
-        messages: [{ role: 'user', content: prompt }],
-        response_format: { type: 'json_object' },
+      const response = await executeWithFallback({
+        messages: [
+          { role: 'system', content: 'You are the Stage 2 Identity & Context Engine of VoiceShield. Respond ONLY with valid JSON.' },
+          { role: 'user', content: prompt }
+        ],
         temperature: 0.1,
-        max_tokens: 250
-      }, { timeout: 2500 });
+        max_tokens: 250,
+        response_format: { type: 'json_object' }
+      });
 
-      const content = response.choices[0]?.message?.content;
-      if (content) {
-        const parsed = JSON.parse(content);
-        impersonationRisk = Math.min(100, Math.max(0, parsed.impersonationRisk ?? 20));
-        signal = parsed.signal || signal;
-        recommendedVerification = parsed.recommendedVerification || recommendedVerification;
-      }
+      const parsed = extractJsonFromContent(response.choices[0]?.message?.content || '{}');
+      impersonationRisk = Math.min(100, Math.max(0, parsed.impersonationRisk ?? 0));
+      signal = parsed.signal || signal;
+      recommendedVerification = parsed.recommendedVerification || recommendedVerification;
+
+      stage2LlmCache.set(cacheKey, {
+        transcript: transcript.trim(),
+        timestamp: Date.now(),
+        impersonationRisk,
+        signal,
+        recommendedVerification
+      });
     } catch (llmErr: any) {
       logger.warn('Groq Stage 2 analysis skipped or failed, using heuristic context', { error: llmErr.message });
-      // Heuristic fallback for Stage 2
-      if (matchedKeywords.length >= 2 || hasUrgency) {
+      // Heuristic fallback for Stage 2: only elevate if there are multiple strong fraud indicators
+      if ((matchedKeywords.length >= 2 || hasUrgency) && (vas >= 50 || profileStatus === 'deviated')) {
         impersonationRisk = 75;
         signal = `High urgency + financial keywords: ${matchedKeywords.slice(0, 3).join(', ')}`;
         recommendedVerification = 'Independent out-of-band confirmation';
+      } else if (matchedKeywords.length >= 2 && hasUrgency) {
+        impersonationRisk = 60;
+        signal = `Urgent financial keywords: ${matchedKeywords.slice(0, 3).join(', ')}`;
+        recommendedVerification = 'Independent out-of-band confirmation';
       } else if (profileStatus === 'deviated') {
-        impersonationRisk = 65;
+        impersonationRisk = 50;
         signal = `Atypical speaker voiceprint deviation (${speakerDeviation}σ)`;
         recommendedVerification = 'Voice callback on registered number';
+      } else {
+        impersonationRisk = 0;
+        signal = 'Normal conversational interaction';
+        recommendedVerification = 'Standard in-call monitoring';
       }
     }
   } else {
     // Deterministic heuristic when no LLM
-    if (matchedKeywords.length >= 2 || hasUrgency) {
-      impersonationRisk = 80;
+    if ((matchedKeywords.length >= 2 || hasUrgency) && (vas >= 50 || profileStatus === 'deviated')) {
+      impersonationRisk = 75;
       signal = `Detected urgent demand with financial keywords (${matchedKeywords.join(', ')})`;
       recommendedVerification = 'Push confirmation to enterprise security app';
     } else if (profileStatus === 'deviated') {
-      impersonationRisk = 60;
+      impersonationRisk = 50;
       signal = `Speaker voiceprint does not match enrolled profile (${speakerDeviation}σ)`;
     }
   }

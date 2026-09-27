@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PhoneOff, Phone, Wifi, WifiOff } from 'lucide-react';
+import { PhoneOff, Phone, Wifi, WifiOff, Loader2, Languages, FileAudio } from 'lucide-react';
 import { useSession } from '../hooks/useSession';
 import { useSessionStore } from '../store/useSessionStore';
 import TranscriptFeed from './TranscriptFeed';
@@ -32,6 +32,7 @@ const CallSession = () => {
   const session = useSession();
   const { 
     startSession, 
+    startFileSession,
     endSession, 
     isRecording, 
     sessionActive,
@@ -56,7 +57,10 @@ const CallSession = () => {
 
   const setReportResult = useSessionStore((state) => state.setReportResult);
   const callerNumber = useSessionStore((state) => state.callerNumber);
+  const speechLanguage = useSessionStore((state) => state.speechLanguage);
+  const setSpeechLanguage = useSessionStore((state) => state.setSpeechLanguage);
   const [sessionStarted, setSessionStarted] = useState(false);
+  const [isEndingCall, setIsEndingCall] = useState(false);
   const [cardDismissedId, setCardDismissedId] = useState<string | null>(null);
   const [dismissedPhases, setDismissedPhases] = useState<Set<string>>(new Set());
   const [seconds, setSeconds] = useState(0);
@@ -114,10 +118,10 @@ const CallSession = () => {
     };
   }, [riskData.risk, riskData.signal, riskData.phase, riskData.coaching, voiceRiskState, voiceStage1.vas]);
 
-  const callbacksRef = useRef({ startSession, endSession });
+  const callbacksRef = useRef({ startSession, startFileSession, endSession });
   useEffect(() => {
-    callbacksRef.current = { startSession, endSession };
-  }, [startSession, endSession]);
+    callbacksRef.current = { startSession, startFileSession, endSession };
+  }, [startSession, startFileSession, endSession]);
 
   const isCallActive = sessionStarted || sessionActive;
 
@@ -131,7 +135,20 @@ const CallSession = () => {
     }
   }, []);
 
+  const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setSeconds(0);
+    setSessionStarted(true);
+    try {
+      await callbacksRef.current.startFileSession(file);
+    } catch (err) {
+      console.error('Error starting file session:', err);
+    }
+  }, []);
+
   const handleEndCall = useCallback(() => {
+    setIsEndingCall(true);
     callbacksRef.current.endSession();
     setSessionStarted(false);
     setSeconds(0);
@@ -144,14 +161,26 @@ const CallSession = () => {
   }, []);
 
   useEffect(() => {
-    if (reportResult && (sessionStarted || sessionActive)) {
+    if (reportResult) {
+      setIsEndingCall(false);
       if (reportResult.report) {
         navigate('/report', { state: { report: reportResult.report } });
       } else if (reportResult.safe) {
         navigate('/');
       }
     }
-  }, [reportResult, sessionStarted, sessionActive, navigate]);
+  }, [reportResult, navigate]);
+
+  useEffect(() => {
+    let timeout: NodeJS.Timeout;
+    if (isEndingCall && !reportResult) {
+      timeout = setTimeout(() => {
+        setIsEndingCall(false);
+        navigate('/');
+      }, 8000);
+    }
+    return () => clearTimeout(timeout);
+  }, [isEndingCall, reportResult, navigate]);
 
   useEffect(() => {
     return () => {
@@ -259,12 +288,56 @@ const CallSession = () => {
           </div>
         </div>
 
+        {/* Language & Multilingual Mode Selector */}
+        <div className="flex items-center justify-between px-1 mb-2.5">
+          <div className="flex items-center gap-1.5 text-xs text-white/60 font-medium">
+            <Languages className="w-3.5 h-3.5 text-primary" />
+            <span className="text-[11px]">Voice Language:</span>
+          </div>
+          <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-lg p-0.5 text-[11px]">
+            <button
+              onClick={() => setSpeechLanguage('hi-IN')}
+              className={`px-2.5 py-0.5 rounded-md transition-all font-medium cursor-pointer ${
+                speechLanguage === 'hi-IN' 
+                  ? 'bg-primary text-black font-bold shadow-sm' 
+                  : 'text-white/60 hover:text-white'
+              }`}
+              title="Hindi & Hinglish conversational detection"
+            >
+              हिंदी / Hinglish
+            </button>
+            <button
+              onClick={() => setSpeechLanguage('en-IN')}
+              className={`px-2.5 py-0.5 rounded-md transition-all font-medium cursor-pointer ${
+                speechLanguage === 'en-IN' 
+                  ? 'bg-primary text-black font-bold shadow-sm' 
+                  : 'text-white/60 hover:text-white'
+              }`}
+              title="Indian English detection"
+            >
+              English (IN)
+            </button>
+            <button
+              onClick={() => setSpeechLanguage('en-US')}
+              className={`px-2 py-0.5 rounded-md transition-all font-medium cursor-pointer ${
+                speechLanguage === 'en-US' 
+                  ? 'bg-primary text-black font-bold shadow-sm' 
+                  : 'text-white/60 hover:text-white'
+              }`}
+              title="Global English detection"
+            >
+              EN (US)
+            </button>
+          </div>
+        </div>
+
         {/* Dhwani AI 3-Stage Acoustic HUD Panel */}
         <div data-testid="risk-indicator">
           <VoiceIntegrityPanel
             stage1={voiceStage1}
             stage2={voiceStage2}
             riskState={voiceRiskState}
+            peakRiskScore={riskData.peakRiskScore}
             evidenceAnchor={evidenceAnchor}
             livenessScore={session.livenessResult?.score ?? null}
             onRunDemoAttack={runDemoAttack}
@@ -334,16 +407,32 @@ const CallSession = () => {
           </div>
 
           {!isCallActive ? (
-            <motion.button 
-              whileTap={{ scale: 0.94 }}
-              onClick={handleStartCall}
-              aria-label="Start call"
-              data-testid="start-call-button"
-              className="px-7 h-13 rounded-full flex items-center justify-center gap-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-bold shadow-[0_0_25px_rgba(16,185,129,0.45)] transition-all cursor-pointer"
-            >
-              <Phone className="w-5 h-5 fill-current" />
-              <span className="text-sm font-semibold tracking-wide">Start Call</span>
-            </motion.button>
+            <div className="flex items-center gap-2">
+              <motion.button 
+                whileTap={{ scale: 0.94 }}
+                onClick={handleStartCall}
+                aria-label="Start call"
+                data-testid="start-call-button"
+                className="px-6 h-13 rounded-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-bold shadow-[0_0_25px_rgba(16,185,129,0.45)] transition-all cursor-pointer"
+              >
+                <Phone className="w-4 h-4 fill-current" />
+                <span className="text-xs sm:text-sm font-semibold tracking-wide">Live Mic</span>
+              </motion.button>
+
+              <label 
+                className="px-4 h-13 rounded-full flex items-center justify-center gap-2 bg-white/10 hover:bg-white/15 border border-white/20 text-white font-medium text-xs shadow-md transition-all cursor-pointer"
+                title="Select an audio/video file (e.g., CIVIXSHIELD_English.mp4) to test voice clone authenticity directly"
+              >
+                <FileAudio className="w-4 h-4 text-primary" />
+                <span className="text-xs font-semibold">Test File</span>
+                <input
+                  type="file"
+                  accept="audio/*,video/*,.mp4,.mp3,.wav,.webm,.m4a"
+                  className="hidden"
+                  onChange={handleFileUpload}
+                />
+              </label>
+            </div>
           ) : (
             <motion.button 
               whileTap={{ scale: 0.9 }}
@@ -373,6 +462,28 @@ const CallSession = () => {
           </div>
         </div>
       </div>
+
+      {/* ─── Ending Call & Auto Report Generation Overlay ─── */}
+      <AnimatePresence>
+        {isEndingCall && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/85 backdrop-blur-xl flex flex-col items-center justify-center p-6 text-center"
+          >
+            <div className="relative mb-5 flex items-center justify-center">
+              <div className="w-20 h-20 rounded-3xl bg-primary/10 border border-primary/30 flex items-center justify-center shadow-[0_0_35px_rgba(29,158,117,0.3)]">
+                <Loader2 className="w-10 h-10 text-primary animate-spin" />
+              </div>
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2 tracking-tight">Securing Call Session</h3>
+            <p className="text-sm text-white/60 max-w-sm leading-relaxed">
+              Generating voice cloning forensic report and syncing with Community Shield...
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

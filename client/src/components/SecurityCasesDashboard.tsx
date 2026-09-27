@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, Variants } from 'framer-motion';
 import {
   Search, Download, FileText, Eye, Shield, ShieldCheck, ShieldAlert,
-  ArrowLeft, LayoutDashboard, Users, Loader2, Database, FileDown, 
+  ArrowLeft, Users, Loader2, Database, FileDown, 
   AlertTriangle, Activity
 } from 'lucide-react';
 import { useRole, roleLabels, UserRole } from '../context/RoleContext';

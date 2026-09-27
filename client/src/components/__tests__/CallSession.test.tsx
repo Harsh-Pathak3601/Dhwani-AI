@@ -35,10 +35,12 @@ vi.mock('../VolumeMonitor', () => ({
 
 describe('CallSession', () => {
   const mockStartSession = vi.fn();
+  const mockStartFileSession = vi.fn();
   const mockEndSession = vi.fn();
 
   const defaultSessionState: ReturnType<typeof useSessionHook.useSession> = {
     startSession: mockStartSession,
+    startFileSession: mockStartFileSession,
     endSession: mockEndSession,
     isRecording: false,
     sessionActive: true,
@@ -119,7 +121,7 @@ describe('CallSession', () => {
     renderComponent();
     expect(screen.getByText('Microphone Required')).toBeInTheDocument();
     expect(screen.getByText(/Microphone access denied/i)).toBeInTheDocument();
-    
+
     fireEvent.click(screen.getByRole('button', { name: /Go Back/i }));
     expect(mockNavigate).toHaveBeenCalledWith('/');
   });
@@ -138,13 +140,13 @@ describe('CallSession', () => {
       isRecording: true,
     });
     renderComponent();
-    
+
     expect(screen.getByText('00:00')).toBeInTheDocument();
-    
+
     act(() => {
       vi.advanceTimersByTime(2000);
     });
-    
+
     expect(screen.getByText('00:02')).toBeInTheDocument();
   });
 
@@ -154,10 +156,10 @@ describe('CallSession', () => {
       riskData: { risk: 50, signal: 'urgent_payment', coaching: 'Do not pay', peakRiskScore: 50 },
     });
     renderComponent();
-    
+
     expect(screen.getByTestId('coaching-card')).toBeInTheDocument();
     expect(screen.getByText('Do not pay')).toBeInTheDocument();
-    
+
     fireEvent.click(screen.getByTestId('dismiss-coaching'));
     expect(screen.queryByTestId('coaching-card')).not.toBeInTheDocument();
   });

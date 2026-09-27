@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Mic, ShieldAlert, Timer, Check, X, Volume2, HelpCircle } from 'lucide-react';
+import { ShieldAlert, Timer, Check, HelpCircle } from 'lucide-react';
 import { LivenessChallengeData } from '../store/useSessionStore';
 
 interface LivenessChallengeModalProps {

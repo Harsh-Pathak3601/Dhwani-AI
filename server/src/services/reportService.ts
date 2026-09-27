@@ -10,6 +10,8 @@ interface SessionData {
   userId: string;
   callerNumber: string;
   peakRiskScore: number;
+  finalRiskScore?: number;
+  livenessScore?: number | null;
 }
 
 export const handleSessionEnd = async (sessionData: SessionData, finalReport: GeneratedReport | null): Promise<IReport | null | undefined> => {
@@ -24,7 +26,11 @@ export const handleSessionEnd = async (sessionData: SessionData, finalReport: Ge
         { endTime: new Date(), peakRiskScore }
       );
 
-      if (peakRiskScore < 40) {
+      const effectiveFinal = sessionData.finalRiskScore !== undefined ? sessionData.finalRiskScore : peakRiskScore;
+      const livenessPassed = sessionData.livenessScore !== null && sessionData.livenessScore !== undefined && sessionData.livenessScore >= 70;
+
+      // Clean clearance: if final resolved risk is under 40 or cleared by voice liveness challenge
+      if (effectiveFinal < 40 || (livenessPassed && effectiveFinal <= 50)) {
         await CallSession.deleteOne({ sessionId });
         return null;
       }
@@ -41,11 +47,19 @@ export const handleSessionEnd = async (sessionData: SessionData, finalReport: Ge
           evidenceLog: finalReport.evidenceLog,
           recommendedAction: finalReport.recommendedAction,
           formalComplaintText: finalReport.formalComplaintText,
-          peakRiskScore
+          peakRiskScore,
+          finalRiskScore: effectiveFinal,
+          livenessScore: sessionData.livenessScore
         });
 
         if (peakRiskScore >= 70) {
-          let commReport = await CommunityReport.findOne({ callerNumber: effectiveCaller });
+          const cleanCaller = effectiveCaller.replace(/\D/g, '').slice(-10);
+          let commReport = await CommunityReport.findOne({ 
+            $or: [
+              { callerNumber: effectiveCaller },
+              ...(cleanCaller ? [{ callerNumber: cleanCaller }] : [])
+            ]
+          });
           if (commReport) {
             const newTotalScore = (commReport.averageRiskScore * commReport.reportsCount) + peakRiskScore;
             commReport.reportsCount += 1;

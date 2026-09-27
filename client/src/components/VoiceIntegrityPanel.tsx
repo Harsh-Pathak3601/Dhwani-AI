@@ -2,15 +2,17 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   ShieldAlert, ShieldCheck, Activity, Cpu, Fingerprint, 
-  Lock, AlertTriangle, Play, Sparkles, CheckCircle2, ChevronDown, ChevronUp,
+  Lock, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp,
   Target, Sliders
 } from 'lucide-react';
 import { VoiceStage1Data, VoiceStage2Data, VoiceRiskState } from '../store/useSessionStore';
+import { VoiceCloneGraph } from './VoiceCloneGraph';
 
 interface VoiceIntegrityPanelProps {
   stage1: VoiceStage1Data;
   stage2: VoiceStage2Data;
   riskState: VoiceRiskState;
+  peakRiskScore?: number;
   evidenceAnchor: { recordId: string; evidenceHash: string; ledgerAnchorBlock: number } | null;
   livenessScore?: number | null;
   onRunDemoAttack?: () => void;
@@ -22,25 +24,31 @@ export const VoiceIntegrityPanel = ({
   stage1,
   stage2,
   riskState,
+  peakRiskScore,
   evidenceAnchor,
   livenessScore,
-  onRunDemoAttack,
-  isDemoRunning,
   isCallActive
 }: VoiceIntegrityPanelProps) => {
   const [isExpanded, setIsExpanded] = useState(true);
 
   // Determine if active voice stream is currently engaged or has processed audio
-  const hasVoice = isCallActive !== false && (
-    (stage1.processingTimeMs && stage1.processingTimeMs > 0) ||
-    stage1.details !== undefined ||
-    (stage1.vas && stage1.vas > 0) ||
-    (stage2.impersonationRisk && stage2.impersonationRisk > 0) ||
-    (stage2.transactionKeywords && stage2.transactionKeywords.length > 0) ||
-    stage2.speakerDeviation !== null ||
-    (riskState.index && riskState.index > 0) ||
-    (livenessScore !== undefined && livenessScore !== null)
-  );
+  const hasVoice = isCallActive !== false;
+
+  // Latched forensic threat index:
+  // If an AI voice anomaly or manipulation was detected earlier in the video/stream (peakRiskScore >= 40),
+  // the gauge and state banner retain the latched peak alert level rather than collapsing to "Monitoring Safe"
+  // when trailing silence or humanized outro audio plays.
+  const latchedPeak = (peakRiskScore && peakRiskScore >= 40) ? peakRiskScore : 0;
+  const effectiveIndex = hasVoice ? Math.max(riskState.index, latchedPeak) : 0;
+
+  // Determine state based on effectiveIndex if peak anomaly was latched
+  const effectiveState = (effectiveIndex >= 85)
+    ? 'Critical'
+    : (effectiveIndex >= 70)
+      ? 'High'
+      : (effectiveIndex >= 40)
+        ? 'Suspicious'
+        : riskState.state;
 
   // 5-State Color Theme Mapping
   const getStateConfig = (state: string) => {
@@ -93,13 +101,13 @@ export const VoiceIntegrityPanel = ({
     }
   };
 
-  const currentTheme = getStateConfig(riskState.state);
+  const currentTheme = getStateConfig(effectiveState);
   const StateIcon = currentTheme.icon;
 
   // Circular gauge math for Security Risk Index (0-100)
   const radius = 28;
   const circumference = 2 * Math.PI * radius;
-  const clampedIndex = hasVoice ? Math.min(100, Math.max(0, riskState.index)) : 0;
+  const clampedIndex = hasVoice ? Math.min(100, Math.max(0, effectiveIndex)) : 0;
   const strokeDashoffset = circumference - (clampedIndex / 100) * circumference;
 
   return (
@@ -120,7 +128,11 @@ export const VoiceIntegrityPanel = ({
             <div className="flex items-center gap-2">
               <h3 className="font-bold text-sm tracking-wide text-white/90">DHWANI AI ACOUSTIC HUD</h3>
               <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border font-bold uppercase tracking-wider ${hasVoice ? currentTheme.badgeBg : 'bg-white/5 text-white/50 border-white/10'}`}>
-                {hasVoice ? currentTheme.label : (isCallActive ? 'AWAITING VOICE' : 'STANDBY')}
+                {hasVoice 
+                  ? (latchedPeak >= 40 && riskState.index < 40 
+                      ? `${currentTheme.label} (PEAK ${latchedPeak})` 
+                      : currentTheme.label) 
+                  : (isCallActive ? 'AWAITING VOICE' : 'STANDBY')}
               </span>
             </div>
             <p className="text-[11px] text-white/50 font-mono">3-Stage Parallel Tap • Zero Call Latency</p>
@@ -139,28 +151,31 @@ export const VoiceIntegrityPanel = ({
 
       {/* 4-Pillar Dynamic Acoustic & Consequence Fusion Telemetry */}
       {(() => {
-        // 1. Stage 1 Voice Authenticity Score (Synthetic Anomaly Index)
+        // 1. Stage 1 Voice Authenticity Score (Human Likelihood: higher = authentic human)
         const authenticityScore = hasVoice 
-          ? (Math.max(0, Math.min(100, stage1.vas || 0)) / 100).toFixed(2)
+          ? (Math.max(0, Math.min(100, 100 - (stage1.vas || 0))) / 100).toFixed(2)
           : '--';
 
-        // 2. Stage 2 Impersonation & Identity Deviation Score
+        // 2. Stage 2 Impersonation & Identity Trust Score (higher = verified identity)
         const identityScore = hasVoice 
-          ? (Math.max(0, Math.min(100, stage2.impersonationRisk || 0)) / 100).toFixed(2)
+          ? (stage2.profileStatus === 'deviated'
+              ? Math.max(0.1, (100 - (stage2.impersonationRisk || 60)) / 100).toFixed(2)
+              : stage2.similarity !== null
+                ? stage2.similarity.toFixed(2)
+                : Math.max(0.2, (100 - (stage2.impersonationRisk || 0)) / 100).toFixed(2))
           : '--';
 
-        // 3. Stage 3 Active Liveness & Biological Prosody
+        // 3. Stage 3 Active Liveness & Biological Prosody (higher = verified living human)
         let activeLivenessScore = '--';
         if (hasVoice) {
-          let activeLivenessVal = 0.05;
+          let activeLivenessVal = 0.95;
           if (livenessScore !== undefined && livenessScore !== null) {
-            activeLivenessVal = Math.max(0.05, Math.min(0.95, (100 - livenessScore) / 100));
+            activeLivenessVal = Math.max(0.05, Math.min(0.99, livenessScore / 100));
+          } else if (stage1.vas >= 60) {
+            activeLivenessVal = Math.max(0.05, (100 - stage1.vas) / 100);
           } else if (stage1.details) {
-            const breathDeviation = Math.max(0, 0.35 - (stage1.details.breathIndex || 0.18));
-            const jitterDeviation = Math.max(0, 0.25 - (stage1.details.pitchJitter || 0.12));
-            activeLivenessVal = Math.max(0.05, Math.min(0.85, Number((breathDeviation + jitterDeviation).toFixed(2))));
-          } else if (stage1.vas > 30) {
-            activeLivenessVal = Number(Math.min(0.9, stage1.vas * 0.008).toFixed(2));
+            const biologicalHealth = (stage1.details.breathIndex * 0.5) + (Math.min(0.1, stage1.details.pitchJitter) * 5);
+            activeLivenessVal = Math.max(0.70, Math.min(0.98, biologicalHealth));
           }
           activeLivenessScore = activeLivenessVal.toFixed(2);
         }
@@ -268,11 +283,13 @@ export const VoiceIntegrityPanel = ({
                 {hasVoice ? clampedIndex : '--'}
               </span>
               <span className="text-[8px] font-mono text-white/50 uppercase mt-0.5">
-                {hasVoice ? 'SRI' : 'WAITING'}
+                {hasVoice ? (latchedPeak > riskState.index ? 'PEAK SRI' : 'SRI') : 'WAITING'}
               </span>
             </div>
           </div>
-          <span className="text-[10px] font-semibold text-white/60 mt-1 uppercase tracking-wider">Risk Index</span>
+          <span className="text-[10px] font-semibold text-white/60 mt-1 uppercase tracking-wider">
+            {latchedPeak > riskState.index ? 'Peak Risk' : 'Risk Index'}
+          </span>
         </div>
 
         {/* Metric 2: Stage 1 Voice Authenticity Score (VAS) */}
@@ -336,6 +353,15 @@ export const VoiceIntegrityPanel = ({
             Impersonation: {hasVoice ? `${stage2.impersonationRisk}%` : '--'}
           </span>
         </div>
+      </div>
+
+      {/* Real-Time Acoustic Voice Clone Waveform Telemetry */}
+      <div className="mt-3.5" data-testid="voice-clone-graph-container">
+        <VoiceCloneGraph 
+          vas={stage1.vas || 0}
+          isCallActive={Boolean(isCallActive)}
+          confidence={stage1.confidence}
+        />
       </div>
 
       {/* Expanded Forensics & Artifacts */}

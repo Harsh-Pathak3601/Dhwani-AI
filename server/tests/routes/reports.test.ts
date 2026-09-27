@@ -9,6 +9,8 @@ describe('Reports Routes', () => {
   let userId: string;
 
   beforeEach(async () => {
+    await User.deleteMany({ email: 'reportuser@example.com' });
+    await Report.deleteMany({ sessionId: 'session_report_123' });
     const user = await User.create({
       name: 'Test',
       email: 'reportuser@example.com',

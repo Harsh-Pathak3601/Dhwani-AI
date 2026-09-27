@@ -53,19 +53,40 @@ export function evaluateSecurityPolicy(
     explanations.push(`Speaker voiceprint deviates ${stage2.speakerDeviation}σ from historical baseline`);
   }
 
-  // ── Weighted Security Risk Index ──────────────────────────────────────────
-  // Stage 1 (Acoustic Authenticity): 60% — primary synthetic-voice signal
-  // Stage 2 (Identity & Context):    30% — behavioural / transcript context
+  // ── Multi-Modal Security Risk Index Fusion ──────────────────────────────
+  // Stage 1 (Acoustic Authenticity): primary synthetic-voice signal (VAS)
+  // Stage 2 (Identity & Context):    behavioural / transcript impersonation context
   // Artifact Evidence Bonus:         up to +20 — each confirmed artifact adds weight
   // Liveness Adjustment:             ±12–15 — active challenge outcome
-  let rawIndex = (stage1.vas * 0.60) + (stage2.impersonationRisk * 0.30);
+  let rawIndex = 0;
+  if (stage1.confidence === 'insufficient') {
+    rawIndex = stage2.impersonationRisk > 0 ? stage2.impersonationRisk : Math.min(30, stage1.vas);
+  } else {
+    // When acoustic signal is sufficient, VAS directly reflects synthetic threat.
+    // Composite risk is anchored to the primary anomaly signal so a high-confidence
+    // voice clone (e.g. VAS 70%) is not artificially deflated by an absent transcript.
+    const primaryAcoustic = stage1.vas;
+    const primaryImpersonation = stage2.impersonationRisk;
+
+    if (primaryAcoustic >= 40 && primaryImpersonation >= 40) {
+      // Cross-modal reinforcement: both acoustic deepfake and impersonation detected
+      rawIndex = Math.round((primaryAcoustic * 0.5) + (primaryImpersonation * 0.5) + 10);
+    } else {
+      // Anchored to the dominant threat modality
+      rawIndex = Math.max(primaryAcoustic, primaryImpersonation);
+    }
+  }
 
   // Artifact evidence amplifier: multiple independently confirmed synthetic
   // fingerprints (f0_too_regular, mfcc_too_smooth, spectral_smoothness, etc.)
   // are strong corroborating evidence even without transcript context.
-  if (stage1.confidence === 'sufficient') {
-    const confirmedArtifacts = stage1.artifacts.filter(a => a !== 'heavy_cascade_resolved').length;
-    const artifactBonus = Math.min(20, confirmedArtifacts * 5);
+  if (stage1.confidence === 'sufficient' && stage1.vas >= 45) {
+    const confirmedArtifacts = stage1.artifacts.filter(a =>
+      a !== 'heavy_cascade_resolved' &&
+      a !== 'insufficient_audio_signal' &&
+      a !== 'neural_vocoder_signature_verified'
+    ).length;
+    const artifactBonus = Math.min(15, confirmedArtifacts * 3);
     rawIndex += artifactBonus;
     if (artifactBonus > 0) {
       explanations.push(`${confirmedArtifacts} confirmed synthetic acoustic fingerprint(s) detected — risk amplified.`);
