@@ -68,28 +68,26 @@ export function evaluateSecurityPolicy(
     const primaryAcoustic = stage1.vas;
     const primaryImpersonation = stage2.impersonationRisk;
 
-    if (primaryAcoustic >= 40 && primaryImpersonation >= 40) {
+    if (primaryAcoustic >= 50 && primaryImpersonation >= 50) {
       // Cross-modal reinforcement: both acoustic deepfake and impersonation detected
-      rawIndex = Math.round((primaryAcoustic * 0.5) + (primaryImpersonation * 0.5) + 10);
+      rawIndex = Math.min(95, Math.round((primaryAcoustic * 0.5) + (primaryImpersonation * 0.5) + 6));
     } else {
       // Anchored to the dominant threat modality
       rawIndex = Math.max(primaryAcoustic, primaryImpersonation);
     }
   }
 
-  // Artifact evidence amplifier: multiple independently confirmed synthetic
-  // fingerprints (f0_too_regular, mfcc_too_smooth, spectral_smoothness, etc.)
-  // are strong corroborating evidence even without transcript context.
-  if (stage1.confidence === 'sufficient' && stage1.vas >= 45) {
+  // Artifact evidence amplifier: only amplify if acoustic VAS is already in the synthetic zone (>= 60)
+  if (stage1.confidence === 'sufficient' && stage1.vas >= 60) {
     const confirmedArtifacts = stage1.artifacts.filter(a =>
       a !== 'heavy_cascade_resolved' &&
       a !== 'insufficient_audio_signal' &&
       a !== 'neural_vocoder_signature_verified'
     ).length;
-    const artifactBonus = Math.min(15, confirmedArtifacts * 3);
+    const artifactBonus = Math.min(6, confirmedArtifacts * 2);
     rawIndex += artifactBonus;
     if (artifactBonus > 0) {
-      explanations.push(`${confirmedArtifacts} confirmed synthetic acoustic fingerprint(s) detected — risk amplified.`);
+      explanations.push(`${confirmedArtifacts} confirmed synthetic acoustic fingerprint(s) detected.`);
     }
   }
 

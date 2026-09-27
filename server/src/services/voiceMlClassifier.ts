@@ -240,23 +240,24 @@ export function classifyVoiceAcousticML(features: AudioFeaturesPayload): MlClass
   // Note: Only push single canonical artifact identifiers to prevent inflating anomaly counts.
   const artifacts: string[] = [];
 
-  const isLowGlottalShimmer = (shimmerLoss > 0.35 || glottalShimmer < 0.022) && hasVoiced;
+  const isLowGlottalShimmer = (shimmerLoss > 0.40 || glottalShimmer < 0.018) && hasVoiced;
   if (isLowGlottalShimmer) {
     artifacts.push('low_glottal_shimmer_vocoder');
   }
 
-  const isLowCycleJitter = cycleJitter < 0.010 && hasVoiced;
+  const isLowCycleJitter = cycleJitter < 0.009 && hasVoiced;
   if (isLowCycleJitter && !isLowGlottalShimmer) {
     artifacts.push('low_cycle_jitter_vocoder');
   }
 
-  const isReplaySpeaker = bassRatio < 0.18 || loudspeakerLoss > 0.40;
+  // Replay speaker detection requires low bass combined with acoustic loss AND lack of human glottal turbulence
+  const isReplaySpeaker = (bassRatio < 0.14 && loudspeakerLoss > 0.50 && glottalShimmer < 0.022);
   if (isReplaySpeaker) {
     artifacts.push('loudspeaker_replay_artifact');
   }
 
-  // High-frequency vocoder shelf occurs in 24kHz/22kHz neural synthesis
-  const isVocoderShelf = (vocoderCutoffLoss > 0.35 || hfCutoffVal < 0.025) && (glottalShimmer < 0.024 || loudspeakerLoss > 0.35 || mfccSmoothness > 0.65);
+  // High-frequency vocoder shelf occurs in 24kHz/22kHz neural synthesis, corroborated by synthetic shimmer or spline
+  const isVocoderShelf = (vocoderCutoffLoss > 0.35 || hfCutoffVal < 0.020) && (glottalShimmer < 0.020 && (loudspeakerLoss > 0.35 || mfccSmoothness > 0.70));
   if (isVocoderShelf) {
     artifacts.push('hf_vocoder_phase_shelf');
   }
@@ -297,41 +298,38 @@ export function classifyVoiceAcousticML(features: AudioFeaturesPayload): MlClass
     a !== 'insufficient_audio_signal' && a !== 'neural_vocoder_signature_verified'
   );
 
-  // Living human biological vocal tract verification
+  // Living human biological vocal tract verification:
+  // Presence of natural glottal cycle flutter, natural pitch variation, and absence of vocoder splines
   const isHumanBiological = (
-    glottalShimmer >= 0.024 &&
-    cycleJitter >= 0.015 &&
-    bassRatio >= 0.20 &&
-    nsdfVal >= 0.48 &&
+    glottalShimmer >= 0.022 &&
+    cycleJitter >= 0.012 &&
     !isMachineFlatF0 &&
-    distinctPhysicalAnomalies.length === 0
+    !isMfccSpline
   );
 
   let vas: number;
 
-  if (isHumanBiological && mlpProbability < 0.30) {
-    // Verified authentic living human voice baseline
-    // Provides responsive real-time telemetry (6% - 12%) reflecting active human vocal fold dynamics
-    const acousticEntropy = Math.round(((cycleJitter * 120) + (glottalShimmer * 60)) % 5);
-    vas = Math.max(6, Math.min(14, Math.round(6 + (mlpProbability * 18) + acousticEntropy)));
-  } else if (mlpProbability >= 0.50) {
+  if (isHumanBiological && mlpProbability < 0.45) {
+    // Verified authentic living human voice baseline (6% - 18%)
+    // Reflects natural human micro-jitter and vocal tract entropy without triggering false alarms
+    const acousticEntropy = Math.round(((cycleJitter * 100) + (glottalShimmer * 50)) % 5);
+    vas = Math.max(6, Math.min(18, Math.round(7 + (mlpProbability * 20) + acousticEntropy)));
+  } else if (mlpProbability >= 0.50 || (distinctPhysicalAnomalies.length >= 2 && (isLowGlottalShimmer || isMachineFlatF0 || isMfccSpline))) {
     // High confidence ML neural vocoder detection
-    vas = Math.min(99, Math.max(75, Math.round(50 + mlpProbability * 48)));
+    vas = Math.min(98, Math.max(72, Math.round(55 + mlpProbability * 42)));
     uniqueArtifacts.push('neural_vocoder_signature_verified');
-  } else if (distinctPhysicalAnomalies.length >= 2 || (isLowGlottalShimmer && (isMfccSpline || isVocoderShelf))) {
-    // Multiple physical synthetic artifacts confirmed (direct physical proof of synthetic voice)
-    const base = Math.min(96, Math.max(75, 68 + distinctPhysicalAnomalies.length * 8));
-    vas = Math.min(98, Math.max(75, Math.round(Math.max(base, mlpProbability * 100))));
+  } else if (isLowGlottalShimmer && (isMfccSpline || isVocoderShelf || isMachineFlatF0)) {
+    // Multiple physical synthetic artifacts confirmed
+    vas = Math.min(95, Math.max(70, Math.round(60 + mlpProbability * 35)));
     uniqueArtifacts.push('neural_vocoder_signature_verified');
-  } else if (distinctPhysicalAnomalies.length >= 1) {
-    // Single confirmed physical synthetic anomaly (e.g. loudspeaker replay or vocoder shelf)
-    vas = Math.min(85, Math.max(65, Math.round(55 + mlpProbability * 35)));
+  } else if (distinctPhysicalAnomalies.length >= 2) {
+    vas = Math.min(75, Math.max(50, Math.round(45 + mlpProbability * 30)));
   } else if (mlpProbability >= 0.35) {
-    vas = Math.round(30 + mlpProbability * 50);
+    vas = Math.round(25 + mlpProbability * 40);
   } else {
-    // Authentic speech with minor acoustic variance (6% - 18%)
-    const acousticEntropy = Math.round(((cycleJitter * 120) + (glottalShimmer * 60)) % 5);
-    vas = Math.max(6, Math.min(18, Math.round(7 + (mlpProbability * 30) + acousticEntropy)));
+    // Human voice with minor room acoustics or laptop mic attenuation (7% - 22%)
+    const acousticEntropy = Math.round(((cycleJitter * 100) + (glottalShimmer * 50)) % 5);
+    vas = Math.max(7, Math.min(22, Math.round(8 + (mlpProbability * 22) + acousticEntropy)));
   }
 
   return {
