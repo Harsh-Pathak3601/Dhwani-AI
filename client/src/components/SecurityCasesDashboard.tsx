@@ -102,8 +102,8 @@ const SecurityCasesDashboard = () => {
   if (selectedCase) {
     const badge = statusBadge(selectedCase.investigationStatus);
     return (
-      <div className="min-h-screen bg-background text-text p-4 pb-24 max-w-3xl mx-auto">
-        <div className="animated-grid-bg" />
+      <div className="min-h-screen bg-transparent text-white px-4 sm:px-8 pt-4 sm:pt-6 pb-28 max-w-5xl mx-auto">
+        <div className="animated-grid-bg opacity-40" />
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative z-10">
           {/* Back Button */}
           <button
@@ -237,8 +237,8 @@ const SecurityCasesDashboard = () => {
 
   // ── MAIN DASHBOARD LIST VIEW ──
   return (
-    <div className="min-h-screen bg-background text-text p-4 pb-24 max-w-4xl mx-auto">
-      <div className="animated-grid-bg" />
+    <div className="min-h-screen bg-transparent text-white px-4 sm:px-8 pt-4 sm:pt-6 pb-28 max-w-6xl mx-auto">
+      <div className="animated-grid-bg opacity-40" />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}

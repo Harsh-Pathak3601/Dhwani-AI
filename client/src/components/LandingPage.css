@@ -2,51 +2,31 @@
     --primary-text: #ffffff;
     --accent-cyan: #5FE3FF;
     --btn-primary-text: #0B3D91;
-    --overlay-color: rgba(0, 0, 0, 0.3); /* Extremely subtle gradient to ensure readability */
+    --overlay-color: rgba(0, 0, 0, 0.3);
+    /* Extremely subtle gradient to ensure readability */
 }
 
 /* =========================================
    HERO SECTION
    ========================================= */
+.landing-page-wrapper {
+    position: relative;
+    width: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
 .hero-section {
     position: relative;
     width: 100%;
-    height: 100vh;
-    min-height: 600px;
+    min-height: calc(100vh - 4rem - 180px);
+    flex: 1;
     display: flex;
     align-items: center;
-    overflow: hidden;
-    background-color: #050A15;
+    background-color: transparent;
     font-family: 'Inter', sans-serif;
     color: var(--primary-text);
-}
-
-.hero-video {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    /* This moves the video slightly. Change the percentage (e.g. 10%, 80%) to adjust it further */
-    object-position: 25% center; 
-    z-index: 1;
-    pointer-events: none;
-    /* Helps keep pixel art crisp when scaled up */
-    image-rendering: pixelated;
-    image-rendering: crisp-edges;
-}
-
-.hero-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    /* Subtle gradient to keep left text readable, preserves pixel-art look on right */
-    background: linear-gradient(90deg, var(--overlay-color) 0%, rgba(0, 0, 0, 0) 55%);
-    z-index: 2;
-    pointer-events: none;
 }
 
 /* =========================================
@@ -60,7 +40,9 @@
     margin: 0 auto;
     padding-left: 4%;
     padding-right: 20px;
-    transform: translateY(-30%); /* Moved upwards just a little bit more */
+    padding-top: 8rem;
+    padding-bottom: 3rem;
+    transform: none;
 }
 
 .hero-eyebrow {
@@ -123,10 +105,11 @@
 
 /* Button 1: Try Dhwani AI */
 .btn-primary {
-    background-color: #F8F9FA; /* White / near-white */
+    background-color: #F8F9FA;
+    /* White / near-white */
     color: var(--btn-primary-text);
-    width: 195px; 
-    height: 54px; 
+    width: 195px;
+    height: 54px;
     font-size: 16px;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
 }
@@ -146,8 +129,8 @@
     background-color: rgba(255, 255, 255, 0.1);
     color: #FFFFFF;
     border: 1px solid rgba(255, 255, 255, 0.4);
-    width: 245px; 
-    height: 54px; 
+    width: 245px;
+    height: 54px;
     font-size: 16px;
     backdrop-filter: blur(6px);
 }
@@ -316,13 +299,13 @@
    MUTE BUTTON
    ========================================= */
 .glass-mute-btn {
-    position: absolute;
-    bottom: 40px;
-    right: 40px;
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
     width: 50px;
     height: 50px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.12);
     border: 1px solid rgba(255, 255, 255, 0.3);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
@@ -330,7 +313,7 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    z-index: 10;
+    z-index: 30;
     transition: all 0.3s ease;
     color: white;
 }
@@ -352,7 +335,7 @@
     .hero-content {
         padding-left: 6%;
     }
-    
+
     .hero-headline {
         font-size: 56px;
         max-width: 600px;
@@ -363,74 +346,77 @@
     .hero-content {
         padding-left: 5%;
     }
-    
+
     .hero-eyebrow {
         font-size: 18px;
     }
-    
+
     .hero-headline {
         font-size: 48px;
         max-width: 500px;
     }
-    
+
     .hero-subtext {
         font-size: 24px;
         margin-bottom: 36px;
     }
-    
+
     .hero-overlay {
         /* Slightly darker on tablet to ensure readability */
-        background: linear-gradient(90deg, rgba(0,0,0,0.5) 0%, rgba(0, 0, 0, 0) 70%);
+        background: linear-gradient(90deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0) 70%);
     }
 }
 
 @media (max-width: 768px) {
     .hero-content {
         padding: 0 5%;
+        padding-top: 5.5rem;
         text-align: left;
-        transform: translateY(0); /* Reset vertical shift for mobile */
+        transform: translateY(0);
+        /* Reset vertical shift for mobile */
     }
-    
+
     .hero-overlay {
-        background: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.6) 100%);
+        background: linear-gradient(180deg, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.6) 100%);
     }
-    
+
     .hero-eyebrow {
         font-size: 16px;
         margin-bottom: 16px;
         letter-spacing: 2px;
     }
-    
+
     .hero-headline {
         font-size: 38px;
         margin-bottom: 20px;
         max-width: 100%;
         line-height: 1.2;
     }
-    
+
     .hero-subtext {
         font-size: 20px;
         margin-bottom: 32px;
     }
-    
+
     .hero-buttons {
         flex-direction: column;
         align-items: stretch;
         gap: 16px;
     }
-    
-    .btn-primary, .btn-secondary {
+
+    .btn-primary,
+    .btn-secondary {
         width: 100%;
         max-width: 100%;
         height: 56px;
     }
-    
+
     .protection-flow {
         margin-top: 24px;
         padding: 10px 16px;
         gap: 8px;
     }
-    
+
     .flow-step {
         font-size: 11px;
     }
@@ -438,7 +424,7 @@
     .section {
         padding: 60px 20px;
     }
-    
+
     .section-title {
         font-size: 26px;
     }

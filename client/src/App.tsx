@@ -7,6 +7,9 @@ import ConsentBanner from './components/ConsentBanner';
 import CallSession from './components/CallSession';
 import ReportView from './components/ReportView';
 import SecurityCasesDashboard from './components/SecurityCasesDashboard';
+import ArchitectureView from './components/ArchitectureView';
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 import { RoleProvider } from './context/RoleContext';
 
 const pageVariants: Variants = {
@@ -111,8 +114,64 @@ function AnimatedRoutes() {
             </PageWrapper>
           }
         />
+        <Route
+          path="/architecture"
+          element={
+            <PageWrapper>
+              <ArchitectureView />
+            </PageWrapper>
+          }
+        />
       </Routes>
     </AnimatePresence>
+  );
+}
+
+function Layout() {
+  const location = useLocation();
+  const isCockpit = location.pathname.startsWith('/session');
+  const isHomePage = location.pathname === '/';
+
+  return (
+    <div className="flex flex-col min-h-screen bg-[#0D1B2A] text-white relative">
+      {isHomePage ? (
+        <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+          <video
+            id="home-bg-video"
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="auto"
+            poster="/hero-poster.webp"
+            className="w-full h-full object-cover object-[25%_center]"
+          >
+            <source
+              src="/Creating_animated_AI_video_1080p_20260927052941.mp4"
+              type="video/mp4"
+            />
+          </video>
+          {/* Gradients ensuring readability for hero text and footer links over video */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/20 to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0D1B2A]/90 via-transparent to-black/35 pointer-events-none" />
+        </div>
+      ) : (
+        <div 
+          className="fixed inset-0 z-0 pointer-events-none bg-cover bg-center bg-no-repeat bg-fixed"
+          style={{ backgroundImage: `url('/bg_1.jpg')` }}
+        >
+          {/* Dark atmospheric overlay ensuring high-tech depth and text legibility */}
+          <div className="absolute inset-0 bg-[#0D1B2A]/80 backdrop-blur-[1px]" />
+        </div>
+      )}
+      <div className="relative z-10 flex flex-col min-h-screen flex-1">
+        <Navbar />
+        <div className={`flex-1 flex flex-col ${!isHomePage ? 'pt-18 sm:pt-20' : ''}`}>
+          <AnimatedRoutes />
+        </div>
+        {!isCockpit && <Footer />}
+      </div>
+    </div>
   );
 }
 
@@ -120,7 +179,7 @@ function App() {
   return (
     <RoleProvider>
       <Router>
-        <AnimatedRoutes />
+        <Layout />
       </Router>
     </RoleProvider>
   );

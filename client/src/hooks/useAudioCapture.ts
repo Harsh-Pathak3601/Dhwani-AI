@@ -26,6 +26,184 @@ export const useAudioCapture = (
   const socketRef = useRef<Socket | null>(socket);
   socketRef.current = socket;
 
+  // Web Speech API Fallback Definition (Resilient, auto-restarting on pauses or ambient silence)
+  const startWebSpeechFallback = useCallback(() => {
+    if (activeRecognitionRef.current) return;
+    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRec) {
+      console.warn('SpeechRecognition API not supported in this browser.');
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRec();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = language || 'hi-IN';
+
+      recognition.onresult = (event: any) => {
+        let interim = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          const res = event.results[i];
+          if (res.isFinal) {
+            transcriptRef.current += res[0].transcript + ' ';
+            const words = transcriptRef.current.split(' ');
+            if (words.length > 400) {
+              transcriptRef.current = words.slice(words.length - 400).join(' ');
+            }
+            if (socketRef.current) {
+              socketRef.current.emit('transcript:update', transcriptRef.current);
+            }
+            setTranscript(transcriptRef.current);
+          } else {
+            interim += res[0].transcript;
+          }
+        }
+        if (interim) {
+          setTranscript(transcriptRef.current + interim);
+        }
+      };
+
+      recognition.onerror = (e: any) => {
+        console.warn('Web Speech status:', e.error);
+        if (e.error === 'not-allowed') {
+          setPermissionError('Microphone permission blocked by browser.');
+        }
+      };
+
+      recognition.onend = () => {
+        if (isRecordingRef.current && !dgConnectedRef.current) {
+          try {
+            recognition.start();
+          } catch {}
+        } else {
+          activeRecognitionRef.current = null;
+        }
+      };
+
+      recognition.start();
+      activeRecognitionRef.current = recognition;
+    } catch (e) {
+      console.warn('Could not start Web Speech Recognition:', e);
+    }
+  }, [language, setTranscript, setPermissionError]);
+
+  // Deepgram WebSocket Stream Connector (supports both Mic stream and AudioContext MediaStreamDestination)
+  const initDeepgramStream = useCallback(async (stream: MediaStream, allowWebSpeechFallback: boolean = true) => {
+    let mediaRecorder: MediaRecorder | null = null;
+    try {
+      mediaRecorder = new MediaRecorder(stream, { 
+        mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
+          ? 'audio/webm;codecs=opus' 
+          : 'audio/webm' 
+      });
+      mediaRecorderRef.current = mediaRecorder;
+    } catch (mrErr) {
+      console.warn('MediaRecorder init fallback:', mrErr);
+    }
+
+    dgConnectedRef.current = false;
+    const dgTimeout = setTimeout(() => {
+      if (!dgConnectedRef.current && isRecordingRef.current && allowWebSpeechFallback) {
+        console.info('Deepgram connection taking longer, activating Web Speech Recognition as temporary fallback.');
+        startWebSpeechFallback();
+      }
+    }, 5000);
+
+    try {
+      const tokenRes = await fetch(`${API_URL}/api/deepgram/token`, { signal: AbortSignal.timeout(12000) });
+      if (tokenRes.ok) {
+        const { token } = await tokenRes.json();
+        if (token && isRecordingRef.current) {
+          const getDgLang = (l: string) => {
+            if (l.startsWith('hi')) return 'hi';
+            if (l === 'en-IN') return 'en-IN';
+            if (l === 'en-US') return 'en-US';
+            return 'hi';
+          };
+          const targetLang = getDgLang(language || 'hi-IN');
+
+          const dgWs = new WebSocket(
+            `wss://api.deepgram.com/v1/listen?model=nova-2&language=${targetLang}&smart_format=true&interim_results=true&endpointing=300`,
+            ['token', token]
+          );
+          dgSocketRef.current = dgWs;
+
+          dgWs.onopen = () => {
+            clearTimeout(dgTimeout);
+            dgConnectedRef.current = true;
+            console.info(`Deepgram Nova-2 connected successfully (Language: ${targetLang}).`);
+
+            if (activeRecognitionRef.current) {
+              try {
+                activeRecognitionRef.current.stop();
+              } catch {}
+              activeRecognitionRef.current = null;
+            }
+
+            if (mediaRecorder && mediaRecorder.state === 'inactive') {
+              mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0 && dgWs.readyState === WebSocket.OPEN) {
+                  dgWs.send(event.data);
+                }
+              };
+              mediaRecorder.start(250);
+            }
+          };
+
+          dgWs.onmessage = (event) => {
+            try {
+              const received = JSON.parse(event.data);
+              if (received.type === 'Results' && received.channel?.alternatives?.[0]) {
+                const text = received.channel.alternatives[0].transcript;
+                if (text && received.is_final) {
+                  transcriptRef.current += text + ' ';
+                  const words = transcriptRef.current.split(' ');
+                  if (words.length > 400) {
+                    transcriptRef.current = words.slice(words.length - 400).join(' ');
+                  }
+                  if (socketRef.current) {
+                    socketRef.current.emit('transcript:update', transcriptRef.current);
+                  }
+                  setTranscript(transcriptRef.current);
+                } else if (text) {
+                  setTranscript(transcriptRef.current + text);
+                }
+              }
+            } catch {}
+          };
+
+          dgWs.onerror = () => {
+            clearTimeout(dgTimeout);
+            dgConnectedRef.current = false;
+            if (isRecordingRef.current && allowWebSpeechFallback) {
+              startWebSpeechFallback();
+            }
+          };
+
+          dgWs.onclose = () => {
+            if (dgConnectedRef.current && isRecordingRef.current && allowWebSpeechFallback) {
+              dgConnectedRef.current = false;
+              startWebSpeechFallback();
+            }
+          };
+        } else {
+          clearTimeout(dgTimeout);
+          if (allowWebSpeechFallback) startWebSpeechFallback();
+        }
+      } else {
+        clearTimeout(dgTimeout);
+        if (allowWebSpeechFallback) startWebSpeechFallback();
+      }
+    } catch (dgErr) {
+      clearTimeout(dgTimeout);
+      console.warn('Deepgram token unreachable:', dgErr);
+      if (isRecordingRef.current && allowWebSpeechFallback) {
+        startWebSpeechFallback();
+      }
+    }
+  }, [language, setTranscript, startWebSpeechFallback]);
+
   const startRecording = useCallback(async () => {
     try {
       // 1. Microphone Capture: Parallel Audio Tap (High-fidelity capture for direct speech + external speakers)
@@ -60,191 +238,8 @@ export const useAudioCapture = (
         }
       });
 
-      // 3. Setup MediaRecorder for audio streaming
-      let mediaRecorder: MediaRecorder | null = null;
-      try {
-        mediaRecorder = new MediaRecorder(stream, { 
-          mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
-            ? 'audio/webm;codecs=opus' 
-            : 'audio/webm' 
-        });
-        mediaRecorderRef.current = mediaRecorder;
-      } catch (mrErr) {
-        console.warn('MediaRecorder init fallback:', mrErr);
-      }
-
-      // 4. Web Speech API Fallback Definition (Resilient, auto-restarting on pauses or ambient silence)
-      const startWebSpeechFallback = () => {
-        if (activeRecognitionRef.current) return;
-        const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-        if (!SpeechRec) {
-          console.warn('SpeechRecognition API not supported in this browser.');
-          return;
-        }
-
-        try {
-          const recognition = new SpeechRec();
-          recognition.continuous = true;
-          recognition.interimResults = true;
-          recognition.lang = language || 'hi-IN';
-
-          recognition.onresult = (event: any) => {
-            let interim = '';
-            for (let i = event.resultIndex; i < event.results.length; ++i) {
-              const res = event.results[i];
-              if (res.isFinal) {
-                transcriptRef.current += res[0].transcript + ' ';
-                const words = transcriptRef.current.split(' ');
-                if (words.length > 400) {
-                  transcriptRef.current = words.slice(words.length - 400).join(' ');
-                }
-                if (socket) {
-                  socket.emit('transcript:update', transcriptRef.current);
-                }
-                setTranscript(transcriptRef.current);
-              } else {
-                interim += res[0].transcript;
-              }
-            }
-            if (interim) {
-              setTranscript(transcriptRef.current + interim);
-            }
-          };
-
-          recognition.onerror = (e: any) => {
-            console.warn('Web Speech status:', e.error);
-            if (e.error === 'not-allowed') {
-              setPermissionError('Microphone permission blocked by browser.');
-            }
-            // For 'no-speech' or 'aborted' or 'network', let onend restart it automatically
-          };
-
-          recognition.onend = () => {
-            // Auto-restart if call is still active and Deepgram is not taking over
-            if (isRecordingRef.current && !dgConnectedRef.current) {
-              try {
-                recognition.start();
-              } catch {
-                // Already running or restart in progress
-              }
-            } else {
-              activeRecognitionRef.current = null;
-            }
-          };
-
-          recognition.start();
-          activeRecognitionRef.current = recognition;
-        } catch (e) {
-          console.warn('Could not start Web Speech Recognition:', e);
-        }
-      };
-
-      // 5. Try Deepgram WebSocket, or seamlessly use Web Speech
-      dgConnectedRef.current = false;
-      const dgTimeout = setTimeout(() => {
-        // If Deepgram has not connected within 5 seconds, activate Web Speech immediately so no words are missed
-        if (!dgConnectedRef.current && isRecordingRef.current) {
-          console.info('Deepgram connection taking longer, activating Web Speech Recognition as temporary fallback.');
-          startWebSpeechFallback();
-        }
-      }, 5000);
-
-      try {
-        const tokenRes = await fetch(`${API_URL}/api/deepgram/token`, { signal: AbortSignal.timeout(12000) });
-        if (tokenRes.ok) {
-          const { token } = await tokenRes.json();
-          if (token && isRecordingRef.current) {
-            // Map UI language to Deepgram's optimal language codes
-            const getDgLang = (l: string) => {
-              if (l.startsWith('hi')) return 'hi';
-              if (l === 'en-IN') return 'en-IN';
-              if (l === 'en-US') return 'en-US';
-              return 'hi';
-            };
-            const targetLang = getDgLang(language || 'hi-IN');
-
-            const dgWs = new WebSocket(
-              `wss://api.deepgram.com/v1/listen?model=nova-2&language=${targetLang}&smart_format=true&interim_results=true&endpointing=300`,
-              ['token', token]
-            );
-            dgSocketRef.current = dgWs;
-
-            dgWs.onopen = () => {
-              clearTimeout(dgTimeout);
-              dgConnectedRef.current = true;
-              console.info(`Deepgram Nova-2 connected successfully (Language: ${targetLang}).`);
-
-              // If Web Speech was temporarily active while waiting, stop it cleanly
-              if (activeRecognitionRef.current) {
-                try {
-                  activeRecognitionRef.current.stop();
-                } catch {}
-                activeRecognitionRef.current = null;
-              }
-
-              if (mediaRecorder && mediaRecorder.state === 'inactive') {
-                mediaRecorder.ondataavailable = (event) => {
-                  if (event.data.size > 0 && dgWs.readyState === WebSocket.OPEN) {
-                    dgWs.send(event.data);
-                  }
-                };
-                mediaRecorder.start(250);
-              }
-            };
-
-            dgWs.onmessage = (event) => {
-              try {
-                const received = JSON.parse(event.data);
-                if (received.type === 'Results' && received.channel?.alternatives?.[0]) {
-                  const text = received.channel.alternatives[0].transcript;
-                  if (text && received.is_final) {
-                    transcriptRef.current += text + ' ';
-                    const words = transcriptRef.current.split(' ');
-                    if (words.length > 400) {
-                      transcriptRef.current = words.slice(words.length - 400).join(' ');
-                    }
-                    if (socket) {
-                      socket.emit('transcript:update', transcriptRef.current);
-                    }
-                    setTranscript(transcriptRef.current);
-                  } else if (text) {
-                    setTranscript(transcriptRef.current + text);
-                  }
-                }
-              } catch {
-                // ignore parsing error
-              }
-            };
-
-            dgWs.onerror = () => {
-              clearTimeout(dgTimeout);
-              dgConnectedRef.current = false;
-              if (isRecordingRef.current) {
-                startWebSpeechFallback();
-              }
-            };
-
-            dgWs.onclose = () => {
-              if (dgConnectedRef.current && isRecordingRef.current) {
-                dgConnectedRef.current = false;
-                startWebSpeechFallback();
-              }
-            };
-          } else {
-            clearTimeout(dgTimeout);
-            startWebSpeechFallback();
-          }
-        } else {
-          clearTimeout(dgTimeout);
-          startWebSpeechFallback();
-        }
-      } catch (dgErr) {
-        clearTimeout(dgTimeout);
-        console.warn('Deepgram token unreachable, using Web Speech API:', dgErr);
-        if (isRecordingRef.current) {
-          startWebSpeechFallback();
-        }
-      }
+      // 3. Connect MediaRecorder & Deepgram WebSocket
+      await initDeepgramStream(stream, true);
 
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Microphone access denied.';
@@ -254,7 +249,7 @@ export const useAudioCapture = (
       isRecordingRef.current = false;
       setIsRecording(false);
     }
-  }, [socket, setTranscript, language]);
+  }, [initDeepgramStream]);
 
   const stopRecording = useCallback(() => {
     isRecordingRef.current = false;
@@ -324,11 +319,56 @@ export const useAudioCapture = (
         },
         onEnded
       );
+
+      // 1. Tapped live MediaStream from file playback -> Deepgram WebSocket streaming
+      const fileStream = featureExtractorRef.current.getMediaStream();
+      if (fileStream) {
+        streamRef.current = fileStream;
+        initDeepgramStream(fileStream, false);
+      }
+
+      // 2. High-accuracy pre-recorded transcription fallback:
+      // Calls /api/deepgram/transcribe-file to guarantee spoken words stream at steady tempo
+      fetch(`${API_URL}/api/deepgram/transcribe-file`, {
+        method: 'POST',
+        headers: { 'Content-Type': file.type || 'audio/wav' },
+        body: file
+      }).then(res => res.json()).then(data => {
+        if (data.transcript && isRecordingRef.current) {
+          // If live WebSocket hasn't already populated transcript:
+          if (!transcriptRef.current.trim()) {
+            if (data.words && data.words.length > 0) {
+              let wIdx = 0;
+              const interval = setInterval(() => {
+                if (!isRecordingRef.current || wIdx >= data.words.length) {
+                  clearInterval(interval);
+                  return;
+                }
+                const chunk = data.words.slice(wIdx, wIdx + 3).map((w: any) => w.word).join(' ');
+                wIdx += 3;
+                transcriptRef.current += (transcriptRef.current ? ' ' : '') + chunk;
+                if (socketRef.current) {
+                  socketRef.current.emit('transcript:update', transcriptRef.current);
+                }
+                setTranscript(transcriptRef.current);
+              }, 400);
+            } else {
+              transcriptRef.current = data.transcript;
+              if (socketRef.current) {
+                socketRef.current.emit('transcript:update', transcriptRef.current);
+              }
+              setTranscript(transcriptRef.current);
+            }
+          }
+        }
+      }).catch(err => {
+        console.warn('Pre-recorded file transcription notice:', err);
+      });
     } catch (err: any) {
       console.error('Failed to analyze file:', err);
       setPermissionError(err.message || 'Failed to decode audio file');
     }
-  }, [socket]);
+  }, [initDeepgramStream, setTranscript]);
 
   return { 
     startRecording, 

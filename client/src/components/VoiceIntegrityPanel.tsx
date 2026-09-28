@@ -32,7 +32,7 @@ export const VoiceIntegrityPanel = ({
   const [isExpanded, setIsExpanded] = useState(true);
 
   // Determine if active voice stream is currently engaged or has processed audio
-  const hasVoice = isCallActive !== false;
+  const hasVoice = isCallActive !== false || (stage1.vas > 0 || riskState.index > 0);
 
   // Latched forensic threat index:
   // If an AI voice anomaly or manipulation was detected earlier in the video/stream (peakRiskScore >= 40),

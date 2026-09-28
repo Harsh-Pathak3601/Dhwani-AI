@@ -41,11 +41,13 @@ export const VoiceCloneGraph: React.FC<VoiceCloneGraphProps> = ({
     }
   }, [vas, peakVas]);
 
-  // Reset peak when call ends
+  const prevActiveRef = useRef(isCallActive);
   useEffect(() => {
-    if (!isCallActive) {
+    // When a brand new call starts (transition from inactive to active), reset peak
+    if (isCallActive && !prevActiveRef.current) {
       setPeakVas(0);
     }
+    prevActiveRef.current = isCallActive;
   }, [isCallActive]);
 
   // Real-time animation loop feeding data points into the timeline buffer
@@ -384,14 +386,14 @@ export const VoiceCloneGraph: React.FC<VoiceCloneGraphProps> = ({
         <div className="flex flex-col">
           <span className="text-white/40 uppercase">Session Peak</span>
           <span className={`font-bold text-xs mt-0.5 ${peakVas >= 60 ? 'text-red-400' : peakVas >= 40 ? 'text-amber-400' : 'text-emerald-400'}`}>
-            {isCallActive ? `${Math.round(peakVas)}%` : '--'}
+            {isCallActive || peakVas > 0 ? `${Math.round(peakVas)}%` : '--'}
           </span>
         </div>
 
         <div className="flex flex-col">
           <span className="text-white/40 uppercase">Rolling Average</span>
           <span className="font-bold text-white text-xs mt-0.5">
-            {isCallActive ? `${avgVas}%` : '--'}
+            {isCallActive || avgVas > 0 ? `${avgVas}%` : '--'}
           </span>
         </div>
 

@@ -12,7 +12,13 @@ export default {
         danger: '#E24B4A',
         warning: '#EF9F27',
         textMain: '#E8E6E1',
-      }
+      },
+      fontFamily: {
+        serif: ['"Instrument Serif"', 'Georgia', 'serif'],
+        instrument: ['"Instrument Serif"', 'Georgia', 'serif'],
+        kaushan: ['"Kaushan Script"', 'cursive'],
+        satisfy: ['"Satisfy"', 'cursive'],
+      },
     },
   },
   plugins: [],

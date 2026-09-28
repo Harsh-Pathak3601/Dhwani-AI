@@ -39,6 +39,7 @@ export class AudioFeatureExtractor {
   private analyser: AnalyserNode | null = null;
   private sourceNode: MediaStreamAudioSourceNode | null = null;
   private fileSourceNode: AudioBufferSourceNode | null = null;
+  private streamDestination: MediaStreamAudioDestinationNode | null = null;
   private animFrameId: number | null = null;
   private isRunning: boolean = false;
   private callback: FeatureCallback | null = null;
@@ -122,6 +123,10 @@ export class AudioFeatureExtractor {
       try { this.fileSourceNode.stop(); } catch (_) {}
       this.fileSourceNode.disconnect();
       this.fileSourceNode = null;
+    }
+    if (this.streamDestination) {
+      try { this.streamDestination.disconnect(); } catch (_) {}
+      this.streamDestination = null;
     }
     if (this.audioCtx && this.audioCtx.state !== 'closed') {
       this.audioCtx.close();
@@ -517,6 +522,9 @@ export class AudioFeatureExtractor {
     source.connect(this.analyser);
     source.connect(this.audioCtx.destination);
 
+    this.streamDestination = this.audioCtx.createMediaStreamDestination();
+    source.connect(this.streamDestination);
+
     this.callback = onFeatures;
     this.isRunning = true;
     this.lastEmitTime = Date.now();
@@ -535,6 +543,13 @@ export class AudioFeatureExtractor {
         onEnded();
       }
     };
+  }
+
+  /**
+   * Returns the MediaStream from file playback for streaming transcription (Deepgram/SpeechRec).
+   */
+  public getMediaStream(): MediaStream | null {
+    return this.streamDestination ? this.streamDestination.stream : null;
   }
 
   /**

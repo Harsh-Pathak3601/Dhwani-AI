@@ -26,13 +26,13 @@ export function evaluateSecurityPolicy(
 ): PolicyDecision {
   const explanations: string[] = [];
 
-  // Check data sufficiency first
+  // Check data sufficiency first: ambient silence or no audio stream yet
   if (stage1.confidence === 'insufficient' && stage1.artifacts.includes('insufficient_audio_signal')) {
     return {
       state: 'Insufficient Evidence',
-      securityRiskIndex: 20,
-      explanation: ['Acoustic signal too brief or low SNR to establish confident synthesis verdict.'],
-      recommendedAction: 'Continue observation; do not authorize high-stakes transactions without verification.',
+      securityRiskIndex: 0,
+      explanation: ['Listening for speech... Awaiting voice input to analyze acoustic features.'],
+      recommendedAction: 'Speak into microphone or play audio to begin real-time voice verification.',
       isConsequential: stage2.transactionKeywords.length > 0,
       requiresHold: false,
       requiresLivenessChallenge: false,

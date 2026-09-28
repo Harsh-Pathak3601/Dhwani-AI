@@ -111,8 +111,8 @@ const CoachingCard = ({
 
         {/* Recommended Action */}
         <div className="bg-black/30 rounded-xl p-3.5 border border-white/5 mt-0.5">
-          <span className="text-white/50 uppercase tracking-wider text-[9px] font-mono block mb-1.5">
-            Recommended Defense Action
+          <span className="font-kaushan text-sm text-amber-300 font-normal tracking-wide block mb-1">
+            Recommended Counter-Action:
           </span>
           <p className="text-white text-base font-semibold leading-relaxed">
             &ldquo;{tierStyle.defaultAction}&rdquo;

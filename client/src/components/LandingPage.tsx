@@ -1,21 +1,15 @@
-import { useRef, useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import './LandingPage.css';
 
 export default function LandingPage() {
-  const videoRef = useRef<HTMLVideoElement>(null);
   const [isMuted, setIsMuted] = useState(true);
 
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.muted = isMuted;
-    }
-  }, [isMuted]);
-
   const toggleMute = () => {
-    if (videoRef.current) {
-      const nextMuted = !videoRef.current.muted;
-      videoRef.current.muted = nextMuted;
+    const video = document.getElementById('home-bg-video') as HTMLVideoElement | null;
+    if (video) {
+      const nextMuted = !video.muted;
+      video.muted = nextMuted;
       setIsMuted(nextMuted);
     }
   };
@@ -23,34 +17,19 @@ export default function LandingPage() {
   return (
     <div className="landing-page-wrapper">
       <section className="hero-section">
-        {/* Background Video */}
-        <video
-          ref={videoRef}
-          className="hero-video"
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="auto"
-          poster="/hero-poster.webp"
-        >
-          <source
-            src="/Creating_animated_AI_video_1080p_20260927052941.mp4"
-            type="video/mp4"
-          />
-        </video>
-
-        {/* Subtle Overlay for text readability */}
-        <div className="hero-overlay"></div>
 
         {/* Hero Content */}
         <div className="hero-content">
-          <span className="hero-eyebrow">AI-POWERED VOICE SECURITY</span>
+          <span className="hero-eyebrow font-kaushan text-emerald-400 tracking-widest text-sm">
+            AI-POWERED VOICE SECURITY
+          </span>
           <h1 className="hero-headline">
             Real-time AI Defense<br />
-            <span className="highlight">Against Voice Scams</span>
+            <span className="font-serif italic font-normal text-cyan-300 tracking-wide">Against Voice Scams</span>
           </h1>
-          <p className="hero-subtext">Don't trust the voice. Verify the action.</p>
+          <p className="hero-subtext font-satisfy text-xl sm:text-2xl text-teal-200/95 font-normal tracking-wide">
+            &ldquo;Don&apos;t trust the voice. Verify the action.&rdquo;
+          </p>
 
           <div className="hero-buttons">
             <Link to="/app" className="btn btn-primary" id="try-dhwani-ai-btn">

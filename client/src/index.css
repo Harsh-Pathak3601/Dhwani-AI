@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=Kaushan+Script&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Satisfy&family=Space+Grotesk:wght@500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -14,7 +14,22 @@
   letter-spacing: -0.035em;
 }
 
+.font-serif, .font-instrument {
+  font-family: var(--font-serif);
+}
+
+.font-kaushan {
+  font-family: var(--font-kaushan);
+}
+
+.font-satisfy {
+  font-family: var(--font-satisfy);
+}
+
 :root {
+  --font-serif: 'Instrument Serif', Georgia, serif;
+  --font-kaushan: 'Kaushan Script', cursive;
+  --font-satisfy: 'Satisfy', cursive;
   --color-background: #0D1B2A;
   --color-background-light: #132238;
   --color-primary: #1D9E75;

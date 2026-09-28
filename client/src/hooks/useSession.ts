@@ -188,9 +188,9 @@ export const useSession = () => {
     });
     setVoiceRiskState({
       state: 'Low',
-      index: 8,
-      explanation: ['Parallel acoustic monitoring tap engaged. Voice analysis active.'],
-      recommendedAction: 'Standard monitoring active; analyzing voice track.',
+      index: 0,
+      explanation: ['Parallel acoustic monitoring tap engaged. Listening for voice input.'],
+      recommendedAction: 'Speak into microphone or play audio to analyze vocal authenticity.',
       isConsequential: false,
       requiresHold: false
     });
@@ -315,7 +315,7 @@ export const useSession = () => {
     });
     setVoiceRiskState({
       state: 'Low',
-      index: 8,
+      index: 0,
       explanation: ['Acoustic analysis initialized. Decoding audio track...'],
       recommendedAction: 'Analyzing voice track...',
       isConsequential: false,
@@ -329,11 +329,17 @@ export const useSession = () => {
     if (socket) {
       socket.emit('session:start', { callerNumber: effectiveCaller, sessionId: newSessionId, userId });
     }
+
     await startFileAnalysis(file, () => {
-      // Test audio file ended: automatically end session so resolved risk scoring locks in
-      setTimeout(() => {
-        endSession();
-      }, 300);
+      // Audio playback completed: keep session active and telemetry visible so user can review peak scores and waveform
+      const currentPeak = Math.max(
+        useSessionStore.getState().riskData.peakRiskScore || 0,
+        useSessionStore.getState().voiceRiskState?.index || 0
+      );
+      setRiskData({
+        ...useSessionStore.getState().riskData,
+        signal: `Playback complete • Peak Risk ${currentPeak}/100. Click 'End Call' to generate forensic incident report.`
+      });
     });
     setSessionActive(true);
   }, [
