@@ -1,0 +1,13 @@
+{
+  "name": "client-proxy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Proxy to support monorepo builds when Vercel root directory is set to client with --prefix client",
+  "scripts": {
+    "postinstall": "node -e \"const { execSync } = require('child_process'); execSync('npm install', { cwd: '..', stdio: 'inherit' });\"",
+    "build": "node build.js"
+  },
+  "dependencies": {
+    "client": "file:.."
+  }
+}
