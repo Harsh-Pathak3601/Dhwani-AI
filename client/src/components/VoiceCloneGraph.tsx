@@ -25,7 +25,7 @@ export const VoiceCloneGraph: React.FC<VoiceCloneGraphProps> = ({
   // Circular buffer storing historical probability values (0-100)
   const [dataPoints, setDataPoints] = useState<number[]>(() => {
     // Initial low resting baseline with subtle natural variance
-    return Array.from({ length: POINT_COUNT }, (_, i) => 
+    return Array.from({ length: POINT_COUNT }, (_, i) =>
       Math.max(2, 6 + Math.sin(i * 0.4) * 3)
     );
   });
@@ -216,12 +216,12 @@ export const VoiceCloneGraph: React.FC<VoiceCloneGraphProps> = ({
       {/* Header telemetry row */}
       <div className="flex items-center justify-between gap-2 mb-2">
         <div className="flex items-center gap-2">
-          <div 
+          <div
             className="w-6 h-6 rounded-lg flex items-center justify-center border transition-colors duration-300"
-            style={{ 
+            style={{
               backgroundColor: `${theme.color}15`,
               borderColor: `${theme.color}40`,
-              color: theme.color 
+              color: theme.color
             }}
           >
             <StatusIcon className="w-3.5 h-3.5" />
@@ -233,12 +233,12 @@ export const VoiceCloneGraph: React.FC<VoiceCloneGraphProps> = ({
               </span>
               <span className="flex h-1.5 w-1.5 relative">
                 {isCallActive && (
-                  <span 
+                  <span
                     className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
                     style={{ backgroundColor: theme.color }}
                   />
                 )}
-                <span 
+                <span
                   className="relative inline-flex rounded-full h-1.5 w-1.5"
                   style={{ backgroundColor: isCallActive ? theme.color : '#64748B' }}
                 />
@@ -267,7 +267,7 @@ export const VoiceCloneGraph: React.FC<VoiceCloneGraphProps> = ({
       {/* SVG Waveform Graph Viewport */}
       <div className="relative w-full h-[120px] rounded-lg bg-black/40 border border-white/5 overflow-hidden">
         {/* Subtle Horizontal Grid lines & Threshold labels */}
-        <div 
+        <div
           className="absolute inset-x-0 border-b border-dashed border-red-500/30 flex items-center justify-between px-2 pointer-events-none z-10"
           style={{ top: `${(graphMath.thresholdCloneY / SVG_HEIGHT) * 100}%` }}
         >
@@ -279,7 +279,7 @@ export const VoiceCloneGraph: React.FC<VoiceCloneGraphProps> = ({
           </span>
         </div>
 
-        <div 
+        <div
           className="absolute inset-x-0 border-b border-dashed border-emerald-500/25 flex items-center justify-between px-2 pointer-events-none z-10"
           style={{ top: `${(graphMath.thresholdHumanY / SVG_HEIGHT) * 100}%` }}
         >
@@ -365,7 +365,7 @@ export const VoiceCloneGraph: React.FC<VoiceCloneGraphProps> = ({
         <div className="absolute right-2 bottom-1.5 flex items-center gap-1.5 bg-black/70 backdrop-blur-md px-2 py-0.5 rounded border border-white/10 z-20">
           <Radio className="w-2.5 h-2.5" style={{ color: theme.color }} />
           <span className="text-[10px] font-mono text-white/60">CURRENT:</span>
-          <span 
+          <span
             className="text-xs font-mono font-bold"
             style={{ color: theme.color }}
           >

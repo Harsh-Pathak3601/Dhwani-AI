@@ -65,6 +65,10 @@ export default function Navbar() {
     return false;
   };
 
+  const isHome = location.pathname === '/';
+
+  const isCockpit = location.pathname.startsWith('/session');
+
   return (
     <motion.header
       initial={{ y: 0 }}
@@ -72,11 +76,15 @@ export default function Navbar() {
       transition={{ duration: 0.25, ease: 'easeInOut' }}
       className="fixed top-2.5 sm:top-3.5 left-0 right-0 z-50 px-3 sm:px-6 pointer-events-none"
     >
-      <div className="max-w-5xl mx-auto rounded-full bg-[#0A131F]/80 hover:bg-[#0A131F]/90 backdrop-blur-xl border border-white/[0.08] shadow-[0_16px_36px_-6px_rgba(0,0,0,0.65),inset_0_1px_1px_rgba(255,255,255,0.12)] px-3 sm:px-4 h-12 flex items-center justify-between pointer-events-auto transition-all">
+      <div className={`max-w-5xl mx-auto rounded-full bg-[#070b10]/85 hover:bg-[#070b10]/95 backdrop-blur-xl border border-white/[0.08] ${
+        isCockpit
+          ? 'shadow-[inset_0_1px_1px_rgba(255,255,255,0.12)]'
+          : 'shadow-[0_16px_36px_-6px_rgba(0,0,0,0.75),inset_0_1px_1px_rgba(255,255,255,0.12)]'
+      } px-3 sm:px-4 h-12 flex items-center justify-between pointer-events-auto transition-all`}>
 
         {/* Brand Logo */}
         <Link to="/" className="flex items-center gap-2 group shrink-0 pr-1">
-          <div className="relative w-7 h-7 flex items-center justify-center group-hover:scale-105 transition-transform drop-shadow-[0_2px_8px_rgba(16,185,129,0.35)]">
+          <div className={`relative w-7 h-7 flex items-center justify-center group-hover:scale-105 transition-transform ${isHome ? 'drop-shadow-[0_2px_8px_rgba(16,185,129,0.35)]' : 'drop-shadow-[0_2px_8px_rgba(255,109,0,0.4)]'}`}>
             <img
               src="/Dhwani_AI_transparent_512x512.png"
               alt="Dhwani AI Logo"
@@ -84,17 +92,17 @@ export default function Navbar() {
             />
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="text-base font-black font-brand-display tracking-tight bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-300 bg-clip-text text-transparent">
+            <span className="text-base font-black font-brand-display tracking-tight text-white">
               Dhwani
             </span>
-            <span className="text-[9px] font-bold font-brand tracking-widest text-emerald-300/90 px-1.5 py-0.2 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+            <span className={`text-[9px] font-bold font-brand tracking-widest px-1.5 py-0.2 rounded-full border ${isHome ? 'text-emerald-300/90 bg-emerald-500/10 border-emerald-500/20' : 'text-amber-300 bg-amber-500/15 border-amber-500/30'}`}>
               AI
             </span>
           </div>
         </Link>
 
         {/* Desktop Single-Line Navigation Pills */}
-        <nav className="hidden md:flex items-center gap-0.5 bg-black/30 p-0.5 rounded-full border border-white/5">
+        <nav className="hidden md:flex items-center gap-0.5 bg-black/40 p-0.5 rounded-full border border-white/5">
           {navLinks.map((link) => {
             const active = isActive(link.path);
             const Icon = link.icon;
@@ -102,12 +110,17 @@ export default function Navbar() {
               <Link
                 key={link.path}
                 to={link.path}
-                className={`px-3 py-1 rounded-full text-xs font-medium tracking-normal transition-all duration-150 flex items-center gap-1.5 whitespace-nowrap ${active
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]'
+                className={`px-3 py-1 rounded-full text-xs font-medium tracking-normal transition-all duration-150 flex items-center gap-1.5 whitespace-nowrap ${
+                  active
+                    ? isHome
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]'
+                      : isCockpit && link.path === '/session'
+                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                        : 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-[0_0_12px_rgba(255,109,0,0.3)]'
                     : 'text-white/65 hover:text-white hover:bg-white/[0.06]'
-                  }`}
+                }`}
               >
-                <Icon className={`w-3.5 h-3.5 shrink-0 ${active ? 'text-emerald-400' : 'text-white/50'}`} />
+                <Icon className={`w-3.5 h-3.5 shrink-0 ${active ? (isHome ? 'text-emerald-400' : 'text-amber-400') : 'text-white/50'}`} />
                 <span>{link.name}</span>
               </Link>
             );
@@ -118,7 +131,11 @@ export default function Navbar() {
         <div className="hidden sm:flex items-center gap-2 shrink-0">
           <Link
             to="/app"
-            className="px-3.5 py-1 rounded-full text-xs font-bold text-slate-950 bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-300 hover:opacity-95 shadow-md shadow-emerald-500/20 transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer hover:scale-[1.02]"
+            className={`px-3.5 py-1 rounded-full text-xs font-bold text-slate-950 hover:opacity-95 shadow-md transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer hover:scale-[1.02] ${
+              isHome
+                ? 'bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-300 shadow-emerald-500/20'
+                : 'bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-400 shadow-orange-500/30 font-black'
+            }`}
           >
             <span className="relative flex h-1.5 w-1.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-slate-950 opacity-75"></span>
@@ -132,7 +149,7 @@ export default function Navbar() {
         <div className="flex md:hidden items-center gap-1">
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-1 rounded-full bg-white/[0.08] border border-white/10 text-white/80 hover:text-white focus:outline-none transition-colors"
+            className="p-1.5 rounded-full bg-white/[0.08] border border-white/10 text-white/80 hover:text-white active:scale-95 focus:outline-none transition-all cursor-pointer"
             aria-label="Toggle menu"
           >
             {mobileMenuOpen ? <HiOutlineXMark className="w-4 h-4" /> : <HiOutlineBars3 className="w-4 h-4" />}
@@ -148,7 +165,7 @@ export default function Navbar() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.98 }}
             transition={{ duration: 0.18 }}
-            className="md:hidden max-w-xs mx-auto mt-2 rounded-2xl bg-[#0A131F]/95 backdrop-blur-2xl border border-white/[0.08] p-3 shadow-2xl space-y-1 pointer-events-auto"
+            className="md:hidden w-full max-w-sm mx-auto mt-2 rounded-2xl bg-[#070b10]/95 backdrop-blur-2xl border border-white/[0.08] p-3 shadow-2xl space-y-1 pointer-events-auto"
           >
             {navLinks.map((link) => {
               const active = isActive(link.path);
@@ -158,13 +175,16 @@ export default function Navbar() {
                   key={link.path}
                   to={link.path}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all ${active
-                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                  className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                    active
+                      ? isHome
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                        : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
                       : 'text-white/80 hover:bg-white/[0.06] hover:text-white'
-                    }`}
+                  }`}
                 >
                   <div className="flex items-center gap-2">
-                    <Icon className="w-4 h-4 text-emerald-400" />
+                    <Icon className={`w-4 h-4 ${isHome ? 'text-emerald-400' : 'text-amber-400'}`} />
                     <span>{link.name}</span>
                   </div>
                   <HiOutlineChevronRight className="w-3.5 h-3.5 text-white/40" />
@@ -176,7 +196,11 @@ export default function Navbar() {
               <Link
                 to="/app"
                 onClick={() => setMobileMenuOpen(false)}
-                className="w-full py-2 rounded-full text-center text-xs font-bold text-slate-950 bg-gradient-to-r from-emerald-400 to-teal-300 shadow-md flex items-center justify-center gap-1.5"
+                className={`w-full py-2 rounded-full text-center text-xs font-bold text-slate-950 shadow-md flex items-center justify-center gap-1.5 ${
+                  isHome
+                    ? 'bg-gradient-to-r from-emerald-400 to-teal-300'
+                    : 'bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-400 font-black'
+                }`}
               >
                 <HiOutlineShieldCheck className="w-4 h-4" />
                 <span>Launch Defense</span>

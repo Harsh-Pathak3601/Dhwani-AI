@@ -155,9 +155,9 @@ const NumberCheck = () => {
             {/* Left Hero & Details (7 cols) */}
             <motion.div variants={itemVariants} className="lg:col-span-7 space-y-6 text-left">
 
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black font-brand-display tracking-tight leading-[1.15]">
+              <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black font-brand-display tracking-tight leading-snug sm:leading-[1.15] break-words">
                 Real-Time Voice Cloning Detection &amp;{' '}
-                <span className="font-serif italic font-normal text-4xl sm:text-5xl lg:text-6xl bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-300 bg-clip-text text-transparent">
+                <span className="font-serif italic font-normal text-3xl sm:text-5xl lg:text-6xl bg-gradient-to-r from-orange-400 via-amber-300 to-yellow-300 bg-clip-text text-transparent inline-block">
                   Scam Interception
                 </span>
               </h1>
@@ -169,7 +169,7 @@ const NumberCheck = () => {
               {/* Trust Badges */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
                 <div className="flex items-center gap-2 p-3 rounded-xl bg-white/[0.03] border border-white/[0.08]">
-                  <Zap className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <Zap className="w-4 h-4 text-amber-400 shrink-0" />
                   <div className="text-xs">
                     <p className="font-bold text-white">0ms Latency</p>
                     <p className="text-white/50 text-[11px]">Parallel Audio Tap</p>
@@ -177,7 +177,7 @@ const NumberCheck = () => {
                 </div>
 
                 <div className="flex items-center gap-2 p-3 rounded-xl bg-white/[0.03] border border-white/[0.08]">
-                  <Lock className="w-4 h-4 text-cyan-400 shrink-0" />
+                  <Lock className="w-4 h-4 text-orange-400 shrink-0" />
                   <div className="text-xs">
                     <p className="font-bold text-white">DPDP 2023</p>
                     <p className="text-white/50 text-[11px]">Zero Audio Stored</p>
@@ -196,7 +196,7 @@ const NumberCheck = () => {
               {/* Preset Threat Scenarios for Quick Testing */}
               <div className="space-y-2 pt-2">
                 <div className="flex items-center gap-2">
-                  <span className="font-satisfy text-base text-teal-300 font-normal">
+                  <span className="font-satisfy text-base text-amber-300 font-normal">
                     Quick-Test Threat Simulation Scenarios:
                   </span>
                 </div>
@@ -231,7 +231,7 @@ const NumberCheck = () => {
                     onKeyDown={(e) => e.key === 'Enter' && setPresetNumber('+91 91234 56789')}
                     className="px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-xs text-white/80 transition-all flex items-center gap-1.5 cursor-pointer"
                   >
-                    <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                    <span className="w-2 h-2 rounded-full bg-amber-400"></span>
                     <span>Verified Legitimate (+91 91234 56789)</span>
                   </div>
                 </div>
@@ -258,7 +258,7 @@ const NumberCheck = () => {
                           <p className="text-[11px] text-white/50">Enter the incoming or suspected number</p>
                         </div>
                       </div>
-                      <div className="px-2 py-0.5 rounded-md bg-white/[0.06] text-[9px] font-mono font-semibold text-emerald-400 border border-emerald-500/20">
+                      <div className="px-2 py-0.5 rounded-md bg-white/[0.06] text-[9px] font-mono font-semibold text-amber-400 border border-amber-500/25">
                         SCANNER v1.0
                       </div>
                     </div>
@@ -271,13 +271,13 @@ const NumberCheck = () => {
                         </label>
 
                         <div className="relative">
-                          <div className="absolute left-0 top-0 bottom-0 w-10 flex items-center justify-center pointer-events-none text-emerald-400">
+                          <div className="absolute left-0 top-0 bottom-0 w-10 flex items-center justify-center pointer-events-none text-amber-400">
                             <Phone className="w-4 h-4" />
                           </div>
                           <input
                             type="tel"
                             placeholder="+91 98123 45678"
-                            className="w-full bg-black/50 border border-white/15 rounded-xl pl-10 pr-3 py-3 text-textMain placeholder:text-textMain/25 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/40 transition-all text-sm font-medium font-mono"
+                            className="w-full bg-black/50 border border-white/15 rounded-xl pl-10 pr-3 py-3 text-textMain placeholder:text-textMain/25 focus:outline-none focus:border-amber-500/60 focus:ring-1 focus:ring-amber-500/40 transition-all text-sm font-medium font-mono"
                             value={callerNumber}
                             onChange={(e) => {
                               if (warning) setWarning(null);
@@ -358,8 +358,8 @@ const NumberCheck = () => {
                           onClick={handleCheck}
                           disabled={loading || !isValidNumber}
                           className={`w-full py-3.5 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer ${isValidNumber && !loading
-                              ? 'bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 text-slate-950 shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:opacity-95'
-                              : 'bg-white/[0.08] text-white/30 cursor-not-allowed border border-white/5'
+                            ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-400 text-slate-950 font-black shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 hover:opacity-95'
+                            : 'bg-white/[0.08] text-white/30 cursor-not-allowed border border-white/5'
                             }`}
                         >
                           {loading ? (
@@ -405,7 +405,7 @@ const NumberCheck = () => {
                           className="px-2.5 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-[11px] text-white/80 transition-all flex items-center justify-between cursor-pointer text-left"
                         >
                           <span className="flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
                             <span>Verified Safe</span>
                           </span>
                           <span className="font-mono text-white/50 text-[10px]">+91 91234 56789</span>
@@ -417,10 +417,10 @@ const NumberCheck = () => {
                   {/* Footer notes inside Phone Display */}
                   <div className="mt-4 pt-3 border-t border-white/[0.08] flex items-center justify-between text-[10px] text-white/50">
                     <span className="flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                      <CheckCircle2 className="w-3 h-3 text-amber-400" />
                       Encrypted Telemetry
                     </span>
-                    <Link to="/consent" className="text-emerald-400 hover:underline">
+                    <Link to="/consent" className="text-amber-400 hover:underline">
                       View DPDP Safeguards &rarr;
                     </Link>
                   </div>
@@ -433,7 +433,7 @@ const NumberCheck = () => {
           <div className="pt-10 border-t border-white/[0.08]">
             <div className="text-center max-w-2xl mx-auto mb-8 space-y-2">
               <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-                How Dhwani AI <span className="font-serif italic font-normal text-emerald-400 text-3xl sm:text-4xl">Neutralizes</span> Impersonation
+                How Dhwani AI <span className="font-serif italic font-normal text-amber-400 text-3xl sm:text-4xl">Neutralizes</span> Impersonation
               </h2>
               <p className="text-xs sm:text-sm text-white/60">
                 A multi-layered defense pipeline combining physical acoustic feature extraction with deep semantic intent modeling.
@@ -442,8 +442,8 @@ const NumberCheck = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Feature 1 */}
-              <div className="glass-card p-6 rounded-2xl border-white/[0.08] space-y-3 hover:border-emerald-500/30 transition-all group">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition-transform">
+              <div className="glass-card p-6 rounded-2xl border-white/[0.08] space-y-3 hover:border-amber-500/40 transition-all group">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center text-amber-400 group-hover:scale-105 transition-transform shadow-sm shadow-amber-500/20">
                   <Cpu className="w-5 h-5" />
                 </div>
                 <h3 className="text-base font-bold text-white">Browser DSP Feature Tap</h3>
@@ -453,8 +453,8 @@ const NumberCheck = () => {
               </div>
 
               {/* Feature 2 */}
-              <div className="glass-card p-6 rounded-2xl border-white/[0.08] space-y-3 hover:border-cyan-500/30 transition-all group">
-                <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 group-hover:scale-105 transition-transform">
+              <div className="glass-card p-6 rounded-2xl border-white/[0.08] space-y-3 hover:border-orange-500/40 transition-all group">
+                <div className="w-10 h-10 rounded-xl bg-orange-500/10 border border-orange-500/25 flex items-center justify-center text-orange-400 group-hover:scale-105 transition-transform shadow-sm shadow-orange-500/20">
                   <Activity className="w-5 h-5" />
                 </div>
                 <h3 className="text-base font-bold text-white">Zero-Hop Edge STT</h3>
@@ -464,8 +464,8 @@ const NumberCheck = () => {
               </div>
 
               {/* Feature 3 */}
-              <div className="glass-card p-6 rounded-2xl border-white/[0.08] space-y-3 hover:border-amber-500/30 transition-all group">
-                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 group-hover:scale-105 transition-transform">
+              <div className="glass-card p-6 rounded-2xl border-white/[0.08] space-y-3 hover:border-amber-500/40 transition-all group">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center text-amber-400 group-hover:scale-105 transition-transform shadow-sm shadow-amber-500/20">
                   <ShieldCheck className="w-5 h-5" />
                 </div>
                 <h3 className="text-base font-bold text-white">Groq Tactical Coaching</h3>

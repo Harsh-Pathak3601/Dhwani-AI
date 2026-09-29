@@ -156,17 +156,21 @@ function Layout() {
           <div className="absolute inset-0 bg-gradient-to-t from-[#0D1B2A]/90 via-transparent to-black/35 pointer-events-none" />
         </div>
       ) : (
-        <div 
-          className="fixed inset-0 z-0 pointer-events-none bg-cover bg-center bg-no-repeat bg-fixed"
-          style={{ backgroundImage: `url('/bg_1.jpg')` }}
-        >
-          {/* Dark atmospheric overlay ensuring high-tech depth and text legibility */}
-          <div className="absolute inset-0 bg-[#0D1B2A]/80 backdrop-blur-[1px]" />
+        <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-black">
+          <iframe
+            src="/nexus-cyber.html"
+            title="Nexus Cyber Background"
+            className="w-full h-full border-0 pointer-events-none scale-100 opacity-90"
+            tabIndex={-1}
+            aria-hidden="true"
+          />
+          {/* Subtle atmospheric vignette ensuring high-tech depth and text legibility */}
+          <div className="absolute inset-0 bg-[#070b10]/40 backdrop-blur-[0.5px] pointer-events-none" />
         </div>
       )}
       <div className="relative z-10 flex flex-col min-h-screen flex-1">
         <Navbar />
-        <div className={`flex-1 flex flex-col ${!isHomePage ? 'pt-18 sm:pt-20' : ''}`}>
+        <div className={`flex-1 flex flex-col ${!isHomePage ? 'pt-20 sm:pt-24' : ''}`}>
           <AnimatedRoutes />
         </div>
         {!isCockpit && <Footer />}

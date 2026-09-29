@@ -40,7 +40,7 @@ const VolumeMonitor: React.FC<VolumeMonitorProps> = ({ isRecording }) => {
               : { duration: 0.3 }
           }
           style={{
-            boxShadow: isRecording ? '0 0 8px rgba(29, 158, 117, 0.4)' : 'none'
+            boxShadow: isRecording ? '0 0 8px rgba(255, 109, 0, 0.5)' : 'none'
           }}
         />
       ))}

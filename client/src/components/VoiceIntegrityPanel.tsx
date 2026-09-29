@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  ShieldAlert, ShieldCheck, Activity, Cpu, Fingerprint, 
+import {
+  ShieldAlert, ShieldCheck, Activity, Cpu, Fingerprint,
   Lock, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp,
   Target, Sliders
 } from 'lucide-react';
 import { VoiceStage1Data, VoiceStage2Data, VoiceRiskState } from '../store/useSessionStore';
 import { VoiceCloneGraph } from './VoiceCloneGraph';
+
 
 interface VoiceIntegrityPanelProps {
   stage1: VoiceStage1Data;
@@ -113,7 +114,7 @@ export const VoiceIntegrityPanel = ({
   return (
     <div className={`glass-card-strong rounded-2xl border ${currentTheme.borderColor} p-4 mb-4 shadow-xl transition-all duration-300 backdrop-blur-xl relative overflow-hidden`}>
       {/* Background glow pulse */}
-      <div 
+      <div
         className="absolute -top-10 -right-10 w-36 h-36 rounded-full blur-3xl opacity-20 pointer-events-none transition-colors duration-500"
         style={{ backgroundColor: currentTheme.color }}
       />
@@ -128,10 +129,10 @@ export const VoiceIntegrityPanel = ({
             <div className="flex items-center gap-2">
               <h3 className="font-bold text-sm tracking-wide text-white/90">DHWANI AI ACOUSTIC HUD</h3>
               <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border font-bold uppercase tracking-wider ${hasVoice ? currentTheme.badgeBg : 'bg-white/5 text-white/50 border-white/10'}`}>
-                {hasVoice 
-                  ? (latchedPeak >= 40 && riskState.index < 40 
-                      ? `${currentTheme.label} (PEAK ${latchedPeak})` 
-                      : currentTheme.label) 
+                {hasVoice
+                  ? (latchedPeak >= 40 && riskState.index < 40
+                    ? `${currentTheme.label} (PEAK ${latchedPeak})`
+                    : currentTheme.label)
                   : (isCallActive ? 'AWAITING VOICE' : 'STANDBY')}
               </span>
             </div>
@@ -140,7 +141,7 @@ export const VoiceIntegrityPanel = ({
         </div>
 
         <div className="flex items-center gap-2">
-          <button 
+          <button
             onClick={() => setIsExpanded(!isExpanded)}
             className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 transition-colors"
           >
@@ -152,17 +153,17 @@ export const VoiceIntegrityPanel = ({
       {/* 4-Pillar Dynamic Acoustic & Consequence Fusion Telemetry */}
       {(() => {
         // 1. Stage 1 Voice Authenticity Score (Human Likelihood: higher = authentic human)
-        const authenticityScore = hasVoice 
+        const authenticityScore = hasVoice
           ? (Math.max(0, Math.min(100, 100 - (stage1.vas || 0))) / 100).toFixed(2)
           : '--';
 
         // 2. Stage 2 Impersonation & Identity Trust Score (higher = verified identity)
-        const identityScore = hasVoice 
+        const identityScore = hasVoice
           ? (stage2.profileStatus === 'deviated'
-              ? Math.max(0.1, (100 - (stage2.impersonationRisk || 60)) / 100).toFixed(2)
-              : stage2.similarity !== null
-                ? stage2.similarity.toFixed(2)
-                : Math.max(0.2, (100 - (stage2.impersonationRisk || 0)) / 100).toFixed(2))
+            ? Math.max(0.1, (100 - (stage2.impersonationRisk || 60)) / 100).toFixed(2)
+            : stage2.similarity !== null
+              ? stage2.similarity.toFixed(2)
+              : Math.max(0.2, (100 - (stage2.impersonationRisk || 0)) / 100).toFixed(2))
           : '--';
 
         // 3. Stage 3 Active Liveness & Biological Prosody (higher = verified living human)
@@ -306,11 +307,11 @@ export const VoiceIntegrityPanel = ({
               <span className="text-[9px] text-white/40">{hasVoice && stage1.vas > 0 ? 'synthetic' : 'awaiting voice'}</span>
             </div>
             <div className="w-full bg-white/10 rounded-full h-1.5 mt-1 overflow-hidden">
-              <div 
-                className="h-full rounded-full transition-all duration-500" 
-                style={{ 
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{
                   width: hasVoice && stage1.vas > 0 ? `${stage1.vas}%` : '0%',
-                  backgroundColor: stage1.vas >= 60 ? '#E24B4A' : stage1.vas >= 40 ? '#EF9F27' : '#1D9E75' 
+                  backgroundColor: stage1.vas >= 60 ? '#E24B4A' : stage1.vas >= 40 ? '#EF9F27' : '#1D9E75'
                 }}
               />
             </div>
@@ -342,11 +343,11 @@ export const VoiceIntegrityPanel = ({
               </div>
             )}
             <p className="text-[9px] text-white/50 mt-1 truncate">
-              {stage2.profileStatus === 'deviated' 
-                ? 'Deviates from enrolled' 
-                : stage2.profileStatus === 'consistent' 
-                ? 'Matches historical calls' 
-                : 'First-seen contact'}
+              {stage2.profileStatus === 'deviated'
+                ? 'Deviates from enrolled'
+                : stage2.profileStatus === 'consistent'
+                  ? 'Matches historical calls'
+                  : 'First-seen contact'}
             </p>
           </div>
           <span className="text-[9px] text-white/40 truncate font-mono">
@@ -357,7 +358,7 @@ export const VoiceIntegrityPanel = ({
 
       {/* Real-Time Acoustic Voice Clone Waveform Telemetry */}
       <div className="mt-3.5" data-testid="voice-clone-graph-container">
-        <VoiceCloneGraph 
+        <VoiceCloneGraph
           vas={stage1.vas || 0}
           isCallActive={Boolean(isCallActive)}
           confidence={stage1.confidence}
@@ -366,7 +367,7 @@ export const VoiceIntegrityPanel = ({
 
       {/* Expanded Forensics & Artifacts */}
       {isExpanded && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
           exit={{ opacity: 0, height: 0 }}

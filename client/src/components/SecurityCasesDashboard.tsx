@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, Variants } from 'framer-motion';
 import {
   Search, Download, FileText, Eye, Shield, ShieldCheck, ShieldAlert,
-  ArrowLeft, Users, Loader2, Database, FileDown, 
+  ArrowLeft, Users, Loader2, Database, FileDown,
   AlertTriangle, Activity
 } from 'lucide-react';
 import { useRole, roleLabels, UserRole } from '../context/RoleContext';
@@ -246,26 +246,26 @@ const SecurityCasesDashboard = () => {
         className="relative z-10"
       >
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6 mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-2 sm:mt-6 mb-6 sm:mb-8">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-primary/10 rounded-2xl p-1.5 flex items-center justify-center border border-primary/30 shadow-[0_0_30px_rgba(29,158,117,0.2)] overflow-hidden backdrop-blur-md">
+            <div className="w-14 h-14 bg-amber-500/10 rounded-2xl p-1.5 flex items-center justify-center border border-amber-500/30 shadow-[0_0_30px_rgba(255,109,0,0.25)] overflow-hidden backdrop-blur-md">
               <img
                 src="/Dhwani_AI_transparent_512x512.png"
                 alt="Dhwani AI"
-                className="w-full h-full object-contain drop-shadow-[0_2px_8px_rgba(29,158,117,0.4)]"
+                className="w-full h-full object-contain drop-shadow-[0_2px_8px_rgba(255,109,0,0.5)]"
               />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl font-bold text-white tracking-tight">Security Cases</h1>
-                <span className="font-brand text-[11px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30" style={{fontFamily: "'Outfit', sans-serif"}}>
+                <span className="font-brand text-[11px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/15 text-white border border-amber-500/30" style={{ fontFamily: "'Outfit', sans-serif" }}>
                   Dhwani AI
                 </span>
               </div>
               <p className="text-white/40 text-sm">Investigation &amp; Triage Dashboard</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
             {/* Role Switcher */}
             <div className="relative">
               <div className="flex items-center gap-2 text-white/50 text-xs mb-1">
@@ -274,7 +274,7 @@ const SecurityCasesDashboard = () => {
               <select
                 value={currentRole}
                 onChange={(e) => setCurrentRole(e.target.value as UserRole)}
-                className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white appearance-none cursor-pointer focus:outline-none focus:border-primary/50 pr-8"
+                className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white appearance-none cursor-pointer focus:outline-none focus:border-amber-500/50 pr-8"
                 style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='rgba(255,255,255,0.5)' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E\")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center' }}
               >
                 {(Object.entries(roleLabels) as [UserRole, string][]).map(([value, label]) => (
@@ -286,7 +286,7 @@ const SecurityCasesDashboard = () => {
             <button
               onClick={handleSeedDemo}
               disabled={seeding}
-              className="py-2 px-4 glass-card hover:bg-white/10 rounded-xl text-sm font-medium transition-all flex items-center gap-2 text-white/70 mt-5"
+              className="py-2 px-4 glass-card hover:bg-white/10 rounded-xl text-sm font-medium transition-all flex items-center gap-2 text-white/70 mt-5 cursor-pointer"
             >
               {seeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
               {seeding ? 'Seeding...' : 'Seed Demo'}
@@ -302,26 +302,24 @@ const SecurityCasesDashboard = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by caller number..."
-            className="w-full bg-white/5 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-primary/50 transition-colors"
+            className="w-full bg-white/5 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-amber-500/50 transition-colors"
           />
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none]">
           {filterTabs.map((tab) => (
             <button
               key={tab.value}
               onClick={() => setActiveFilter(tab.value)}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2 ${
-                activeFilter === tab.value
-                  ? 'bg-primary/20 text-primary border border-primary/40'
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2 ${activeFilter === tab.value
+                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm shadow-orange-500/20'
                   : 'text-white/50 hover:text-white/70 hover:bg-white/5 border border-transparent'
-              }`}
+                }`}
             >
               {tab.label}
-              <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-                activeFilter === tab.value ? 'bg-primary/30 text-primary' : 'bg-white/10 text-white/40'
-              }`}>
+              <span className={`text-xs px-1.5 py-0.5 rounded-full ${activeFilter === tab.value ? 'bg-amber-500/30 text-amber-300' : 'bg-white/10 text-white/40'
+                }`}>
                 {tab.count}
               </span>
             </button>

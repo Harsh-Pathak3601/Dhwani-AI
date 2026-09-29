@@ -35,6 +35,43 @@ export interface AudioFeatures {
 export type FeatureCallback = (features: AudioFeatures) => void;
 
 export class AudioFeatureExtractor {
+  // Static real-time listener for visualizers (Mel Spectrogram, HUD, Oscilloscope)
+  private static activeAnalyser: AnalyserNode | null = null;
+  private static analyserListeners: Set<(analyser: AnalyserNode | null) => void> = new Set();
+  private static featureListeners: Set<(features: AudioFeatures) => void> = new Set();
+
+  public static getLiveAnalyser(): AnalyserNode | null {
+    return AudioFeatureExtractor.activeAnalyser;
+  }
+
+  public static onAnalyserChange(listener: (analyser: AnalyserNode | null) => void): () => void {
+    AudioFeatureExtractor.analyserListeners.add(listener);
+    listener(AudioFeatureExtractor.activeAnalyser);
+    return () => {
+      AudioFeatureExtractor.analyserListeners.delete(listener);
+    };
+  }
+
+  public static onLiveFeatures(listener: (features: AudioFeatures) => void): () => void {
+    AudioFeatureExtractor.featureListeners.add(listener);
+    return () => {
+      AudioFeatureExtractor.featureListeners.delete(listener);
+    };
+  }
+
+  public static notifyAnalyser(analyser: AnalyserNode | null) {
+    AudioFeatureExtractor.activeAnalyser = analyser;
+    AudioFeatureExtractor.analyserListeners.forEach((fn) => {
+      try { fn(analyser); } catch (e) { console.error('Analyser listener error:', e); }
+    });
+  }
+
+  public static notifyFeatures(features: AudioFeatures) {
+    AudioFeatureExtractor.featureListeners.forEach((fn) => {
+      try { fn(features); } catch (e) { console.error('Feature listener error:', e); }
+    });
+  }
+
   private audioCtx: AudioContext | null = null;
   private analyser: AnalyserNode | null = null;
   private sourceNode: MediaStreamAudioSourceNode | null = null;
@@ -99,6 +136,7 @@ export class AudioFeatureExtractor {
 
       this.callback = onFeatures;
       this.isRunning = true;
+      AudioFeatureExtractor.notifyAnalyser(this.analyser);
       this.lastEmitTime = Date.now();
       this.lastPitchTime = 0;
       this.lastNsdfPeak = 0;
@@ -111,6 +149,7 @@ export class AudioFeatureExtractor {
 
   public stop() {
     this.isRunning = false;
+    AudioFeatureExtractor.notifyAnalyser(null);
     if (this.animFrameId) {
       cancelAnimationFrame(this.animFrameId);
       this.animFrameId = null;
@@ -336,6 +375,7 @@ export class AudioFeatureExtractor {
       if (this.callback) {
         this.callback(features);
       }
+      AudioFeatureExtractor.notifyFeatures(features);
     }
 
     this.animFrameId = requestAnimationFrame(this.processLoop);
@@ -527,6 +567,7 @@ export class AudioFeatureExtractor {
 
     this.callback = onFeatures;
     this.isRunning = true;
+    AudioFeatureExtractor.notifyAnalyser(this.analyser);
     this.lastEmitTime = Date.now();
     this.lastPitchTime = 0;
     this.lastNsdfPeak = 0;

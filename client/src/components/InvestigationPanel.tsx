@@ -154,7 +154,7 @@ const InvestigationPanel = ({
             ? 'bg-primary/30 text-primary border border-primary/50'
             : isSaving
             ? 'bg-white/10 text-white/50 cursor-wait'
-            : 'bg-gradient-to-r from-primary to-primary-light hover:from-primary-light hover:to-primary text-white shadow-[0_0_20px_rgba(29,158,117,0.3)]'
+            : 'bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-400 hover:opacity-95 text-slate-950 font-black shadow-[0_0_20px_rgba(255,109,0,0.35)]'
         }`}
       >
         {saved ? (

@@ -100,8 +100,8 @@ export const LivenessChallengeModal = ({
             <label className="text-[10px] font-mono text-white/50 uppercase">
               Spoken Response Capture
             </label>
-            <div className="flex items-center gap-1.5 text-[10px] font-mono text-emerald-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+            <div className="flex items-center gap-1.5 text-[10px] font-mono text-amber-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
               <span>Mic Live Listening</span>
             </div>
           </div>
@@ -121,8 +121,8 @@ export const LivenessChallengeModal = ({
             </button>
           </div>
           {spokenText && (
-            <div className="text-[10px] font-mono text-emerald-300 mt-1 flex items-center gap-1">
-              <Check className="w-3 h-3 text-emerald-400" />
+            <div className="text-[10px] font-mono text-amber-300 mt-1 flex items-center gap-1">
+              <Check className="w-3 h-3 text-amber-400" />
               <span>Voice captured: &ldquo;{spokenText}&rdquo;</span>
             </div>
           )}
