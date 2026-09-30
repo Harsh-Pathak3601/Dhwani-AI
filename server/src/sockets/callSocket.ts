@@ -8,6 +8,7 @@ import { evaluateSecurityPolicy, PolicyDecision } from '../services/policyEngine
 import { generateLivenessChallenge, evaluateLivenessResponse } from '../services/livenessService.js';
 import { triggerOOBVerification, resolveOOBVerification, getActiveHold } from '../services/trustChannelService.js';
 import { recordEvidence } from '../services/evidenceService.js';
+import { createVelmaStreamingSession, VelmaStreamingSession, VelmaFrameVerdict } from '../services/modulateService.js';
 import logger from '../utils/logger.js';
 
 interface SessionData {
@@ -49,6 +50,7 @@ export const setupCallSocket = (socket: Socket, io: Server) => {
   let activeChallengeId: string | null = null;
   let challengeCooldownUntil = 0;
   let hasTriggeredHold = false;
+  let velmaStreamingSession: VelmaStreamingSession | null = null;
 
   socket.on('session:start', ({ callerNumber, sessionId, userId }) => {
     logger.info(`Session started: ${sessionId}`);
@@ -93,6 +95,97 @@ export const setupCallSocket = (socket: Socket, io: Server) => {
     if (turnTimer) {
       clearTimeout(turnTimer);
       turnTimer = null;
+    }
+
+    // Initialize Velma-2 Streaming session for real-time synthetic voice detection
+    velmaStreamingSession = createVelmaStreamingSession(sessionData.sessionId, (verdict: VelmaFrameVerdict) => {
+      logger.info(`[Modulate Velma-2] Stream frame verdict: ${verdict.verdict} (conf: ${verdict.confidence})`);
+      socket.emit('modulate:verdict', verdict);
+
+      if (verdict.verdict === 'synthetic' && verdict.confidence >= 0.5) {
+        // Calibrate streaming frame confidence across realistic forensic range (70 - 95%)
+        const syntheticVAS = Math.min(95, Math.max(70, Math.round(56 + verdict.confidence * 39)));
+        if (syntheticVAS > latestStage1.vas) {
+          latestStage1.vas = syntheticVAS;
+          if (!latestStage1.artifacts.includes('modulate_velma_synthetic_detected')) {
+            latestStage1.artifacts.push('modulate_velma_synthetic_detected');
+          }
+          latestStage1.confidence = 'sufficient';
+
+          const policy = evaluateSecurityPolicy(latestStage1, latestStage2, activeLivenessScore);
+          latestRiskIndex = policy.securityRiskIndex;
+          if (policy.securityRiskIndex > peakRiskScore) {
+            peakRiskScore = policy.securityRiskIndex;
+          }
+
+          socket.emit('voice:stage1', latestStage1);
+          socket.emit('risk:state', {
+            state: policy.state,
+            index: policy.securityRiskIndex,
+            explanation: [
+              `Velma-2 detected synthetic audio signature (${syntheticVAS}% confidence).`,
+              ...(Array.isArray(policy.explanation) ? policy.explanation : [String(policy.explanation)])
+            ],
+            recommendedAction: policy.recommendedAction,
+            isConsequential: policy.isConsequential,
+            requiresHold: policy.requiresHold
+          });
+        }
+      }
+    });
+  });
+
+  /**
+   * ─── RAW AUDIO STREAMING CHUNK HANDLER ───
+   * Receives binary audio chunks to forward to Velma-2 Streaming WebSocket
+   */
+  socket.on('audio:chunk', (chunk: Buffer | ArrayBuffer | Uint8Array) => {
+    if (velmaStreamingSession && chunk) {
+      velmaStreamingSession.sendAudioChunk(chunk);
+    }
+  });
+
+  /**
+   * ─── MODULATE VELMA-2 BATCH RESULT HANDLER ───
+   * Receives whole-file forensic results from Velma-2 Batch API
+   */
+  socket.on('modulate:batch_result', (batchResult: any) => {
+    logger.info(`[Modulate Velma-2 Batch] Received batch verdict: ${batchResult?.overallVerdict} (maxConf: ${batchResult?.maxConfidence})`);
+    if (batchResult && batchResult.syntheticFramesCount > 0 && batchResult.maxConfidence >= 0.5) {
+      const maxConf = Number(batchResult.maxConfidence || 0.85);
+      const avgConf = Number(batchResult.avgConfidence || maxConf);
+      const frameRatio = batchResult.totalFramesCount > 0 ? (batchResult.syntheticFramesCount / batchResult.totalFramesCount) : 1;
+      
+      // Multi-factor confidence calibration:
+      // Reflects peak frame (50%), whole-file average (30%), and synthetic presence duration (20%)
+      const calibratedConf = (maxConf * 0.50) + (avgConf * 0.30) + (frameRatio * 0.20);
+      const batchVAS = Math.min(96, Math.max(72, Math.round(58 + calibratedConf * 38)));
+      if (batchVAS > latestStage1.vas) {
+        latestStage1.vas = batchVAS;
+        if (!latestStage1.artifacts.includes('modulate_velma_batch_synthetic_detected')) {
+          latestStage1.artifacts.push('modulate_velma_batch_synthetic_detected');
+        }
+        latestStage1.confidence = 'sufficient';
+
+        const policy = evaluateSecurityPolicy(latestStage1, latestStage2, activeLivenessScore);
+        latestRiskIndex = policy.securityRiskIndex;
+        if (policy.securityRiskIndex > peakRiskScore) {
+          peakRiskScore = policy.securityRiskIndex;
+        }
+
+        socket.emit('voice:stage1', latestStage1);
+        socket.emit('risk:state', {
+          state: policy.state,
+          index: policy.securityRiskIndex,
+          explanation: [
+            `Velma-2 Batch forensic analysis detected synthetic voice pattern (${batchVAS}% confidence).`,
+            ...(Array.isArray(policy.explanation) ? policy.explanation : [String(policy.explanation)])
+          ],
+          recommendedAction: policy.recommendedAction,
+          isConsequential: policy.isConsequential,
+          requiresHold: policy.requiresHold
+        });
+      }
     }
   });
 
@@ -353,18 +446,18 @@ export const setupCallSocket = (socket: Socket, io: Server) => {
     // Spliced or manipulated audio often concludes with natural speech or humanized outro audio.
     // In audio/video forensics, if synthetic voice manipulation was detected anywhere in the session,
     // the evidence is latched to the maximum detected threat.
-    const maxPeak = Math.max(
+    const maxPeak = Math.min(98, Math.max(
       peakRiskScore,
       payload?.peakRiskScore || 0,
       activeSessionData.peakRiskScore || 0
-    );
+    ));
 
     // If liveness passed AND no critical synthetic anomaly was ever detected (maxPeak < 50),
     // then it can resolve down to safe.
     // BUT if synthetic voice was detected (maxPeak >= 40), it MUST NOT be cleared as safe.
-    const finalRiskScore = (livenessPassed && maxPeak < 50)
+    const finalRiskScore = Math.min(98, (livenessPassed && maxPeak < 50)
       ? Math.min(latestRiskIndex, 30)
-      : Math.max(latestRiskIndex, maxPeak);
+      : Math.max(latestRiskIndex, maxPeak));
 
     // Recording is ONLY cleared if NO synthetic anomalies or scam patterns were detected throughout
     const isCleared = (maxPeak < 40) && (finalRiskScore < 40);
@@ -477,6 +570,10 @@ export const setupCallSocket = (socket: Socket, io: Server) => {
   });
 
   function cleanup() {
+    if (velmaStreamingSession) {
+      velmaStreamingSession.close();
+      velmaStreamingSession = null;
+    }
     if (turnTimer) {
       clearTimeout(turnTimer);
       turnTimer = null;

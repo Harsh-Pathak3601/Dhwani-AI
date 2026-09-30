@@ -4,6 +4,8 @@ import { Activity, ShieldAlert, ShieldCheck, AlertTriangle, Radio } from 'lucide
 
 interface VoiceCloneGraphProps {
   vas: number; // 0 - 100 Voice Authenticity Score (Synthetic / Clone Likelihood)
+  riskIndex?: number; // 0 - 98 Security Risk Index
+  riskState?: 'Insufficient Evidence' | 'Low' | 'Suspicious' | 'High' | 'Critical' | string;
   isCallActive?: boolean;
   confidence?: 'sufficient' | 'insufficient' | number;
   className?: string;
@@ -17,6 +19,8 @@ const PADDING_BOTTOM = 22;
 
 export const VoiceCloneGraph: React.FC<VoiceCloneGraphProps> = ({
   vas = 0,
+  riskIndex = 0,
+  riskState,
   isCallActive = false,
   confidence = 'sufficient',
   className = '',
@@ -31,15 +35,18 @@ export const VoiceCloneGraph: React.FC<VoiceCloneGraphProps> = ({
   });
 
   const [peakVas, setPeakVas] = useState<number>(0);
-  const targetVasRef = useRef(vas);
-  const currentInterpolatedRef = useRef(vas);
+  
+  // Dynamic target threat level combines raw acoustic VAS and Stage 3 Security Risk Index, capped at 98 max
+  const targetThreat = Math.min(98, Math.max(0, Math.max(vas || 0, riskIndex || 0)));
+  const targetVasRef = useRef(targetThreat);
+  const currentInterpolatedRef = useRef(targetThreat);
 
   useEffect(() => {
-    targetVasRef.current = vas;
-    if (vas > peakVas) {
-      setPeakVas(vas);
+    targetVasRef.current = targetThreat;
+    if (targetThreat > peakVas) {
+      setPeakVas(Math.min(98, targetThreat));
     }
-  }, [vas, peakVas]);
+  }, [targetThreat, peakVas]);
 
   const prevActiveRef = useRef(isCallActive);
   useEffect(() => {
@@ -60,20 +67,24 @@ export const VoiceCloneGraph: React.FC<VoiceCloneGraphProps> = ({
           // Resting baseline when idle/standby: gentle micro-undulation between 3% and 7%
           nextValue = 4 + Math.sin(Date.now() / 800) * 2;
         } else {
-          // Smooth asymptotic approach to target VAS with realistic voice fluctuations
+          // Smooth asymptotic approach to target threat level with realistic voice fluctuations
           const target = targetVasRef.current;
           const diff = target - currentInterpolatedRef.current;
           currentInterpolatedRef.current += diff * 0.35;
 
           const base = currentInterpolatedRef.current;
 
-          if (base >= 55) {
-            // High / Cloned Voice state: sharp synthetic jitter & elevated spikes
-            const cloneNoise = (Math.random() - 0.5) * 6;
-            nextValue = Math.min(100, Math.max(50, base + cloneNoise));
+          if (base >= 75) {
+            // Critical Risk state: sharp synthetic jitter & elevated spikes, capped at 98
+            const cloneNoise = (Math.random() - 0.5) * 5;
+            nextValue = Math.min(98, Math.max(65, base + cloneNoise));
+          } else if (base >= 55) {
+            // High Risk state
+            const cloneNoise = (Math.random() - 0.5) * 5;
+            nextValue = Math.min(85, Math.max(45, base + cloneNoise));
           } else if (base >= 35) {
             // Suspicious intermediate state
-            const suspicionNoise = (Math.random() - 0.5) * 5;
+            const suspicionNoise = (Math.random() - 0.5) * 4;
             nextValue = Math.min(65, Math.max(25, base + suspicionNoise));
           } else {
             // Natural Human Voice: low baseline with biological vocal micro-tremor & breath fluctuations
@@ -90,35 +101,57 @@ export const VoiceCloneGraph: React.FC<VoiceCloneGraphProps> = ({
     return () => clearInterval(interval);
   }, [isCallActive]);
 
-  // Determine current acoustic state and visual theme
-  const currentVal = dataPoints[dataPoints.length - 1] ?? vas;
-  const isCloned = isCallActive && currentVal >= 60;
-  const isSuspicious = isCallActive && currentVal >= 40 && currentVal < 60;
-  const isHuman = isCallActive && currentVal < 40;
+  // Determine current active risk tier
+  const currentVal = Math.min(98, dataPoints[dataPoints.length - 1] ?? targetThreat);
+  
+  const effectiveTier: 'Critical' | 'High' | 'Suspicious' | 'Low' | 'Insufficient Evidence' = useMemo(() => {
+    if (riskState === 'Critical' || currentVal >= 75 || targetThreat >= 75) return 'Critical';
+    if (riskState === 'High' || currentVal >= 55 || targetThreat >= 55) return 'High';
+    if (riskState === 'Suspicious' || currentVal >= 40 || targetThreat >= 40) return 'Suspicious';
+    if (confidence === 'insufficient') return 'Insufficient Evidence';
+    return 'Low';
+  }, [riskState, currentVal, targetThreat, confidence]);
+
+  const isCritical = isCallActive && effectiveTier === 'Critical';
+  const isHigh = isCallActive && effectiveTier === 'High';
+  const isSuspicious = isCallActive && effectiveTier === 'Suspicious';
+  const isHuman = isCallActive && effectiveTier === 'Low';
 
   const theme = useMemo(() => {
-    if (isCloned) {
+    if (isCritical) {
       return {
-        label: 'AI CLONED VOICE DETECTED',
+        label: 'CRITICAL RISK STATE',
         badgeBg: 'bg-red-500/20 text-red-300 border-red-500/40 shadow-[0_0_12px_rgba(239,68,68,0.3)]',
         color: '#EF4444',
         glowColor: 'rgba(239, 68, 68, 0.45)',
         gradientTop: '#EF4444',
         gradientBottom: '#7F1D1D',
         statusIcon: ShieldAlert,
-        statusText: 'CRITICAL SYNTHETIC RISK',
+        statusText: 'CRITICAL SYNTHETIC RISK • INTERVENTION ARMED',
+      };
+    }
+    if (isHigh) {
+      return {
+        label: 'HIGH RISK THREAT',
+        badgeBg: 'bg-orange-500/20 text-orange-300 border-orange-500/40 shadow-[0_0_12px_rgba(249,115,22,0.3)]',
+        color: '#F97316',
+        glowColor: 'rgba(249, 115, 22, 0.4)',
+        gradientTop: '#F97316',
+        gradientBottom: '#7C2D12',
+        statusIcon: ShieldAlert,
+        statusText: 'HIGH ANOMALY DETECTED • VERIFICATION REQUIRED',
       };
     }
     if (isSuspicious) {
       return {
-        label: 'ACOUSTIC ANOMALY SUSPECTED',
+        label: 'ACOUSTIC ANOMALY',
         badgeBg: 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-[0_0_12px_rgba(245,158,11,0.25)]',
         color: '#F59E0B',
         glowColor: 'rgba(245, 158, 11, 0.35)',
         gradientTop: '#F59E0B',
         gradientBottom: '#78350F',
         statusIcon: AlertTriangle,
-        statusText: 'ELEVATED SYNTHETIC TRACES',
+        statusText: 'ELEVATED SYNTHETIC TRACES DETECTED',
       };
     }
     if (isHuman) {
@@ -143,7 +176,7 @@ export const VoiceCloneGraph: React.FC<VoiceCloneGraphProps> = ({
       statusIcon: Activity,
       statusText: isSignalLow ? 'INSUFFICIENT AUDIO SIGNAL' : 'ZERO-LATENCY PARALLEL TAP',
     };
-  }, [isCloned, isSuspicious, isHuman, isSignalLow]);
+  }, [isCritical, isHigh, isSuspicious, isHuman, isSignalLow]);
 
   // Compute SVG coordinates and Catmull-Rom smooth spline path
   const graphMath = useMemo(() => {
@@ -185,15 +218,15 @@ export const VoiceCloneGraph: React.FC<VoiceCloneGraphProps> = ({
     }
 
     // Critical threshold Y-lines
-    const thresholdCloneY = getY(60);
-    const thresholdHumanY = getY(30);
+    const thresholdCriticalY = getY(75);
+    const thresholdHumanY = getY(35);
 
     const latestPoint = points[points.length - 1] ?? { x: SVG_WIDTH, y: getY(0), val: 0 };
 
     return {
       linePath,
       areaPath,
-      thresholdCloneY,
+      thresholdCriticalY,
       thresholdHumanY,
       latestPoint,
     };
@@ -202,7 +235,7 @@ export const VoiceCloneGraph: React.FC<VoiceCloneGraphProps> = ({
   const StatusIcon = theme.statusIcon;
   const avgVas = useMemo(() => {
     const sum = dataPoints.reduce((acc, curr) => acc + curr, 0);
-    return Math.round((sum / dataPoints.length) * 10) / 10;
+    return Math.min(98, Math.round((sum / dataPoints.length) * 10) / 10);
   }, [dataPoints]);
 
   return (
@@ -252,7 +285,7 @@ export const VoiceCloneGraph: React.FC<VoiceCloneGraphProps> = ({
 
         {/* Live Status Badge */}
         <div className={`px-2.5 py-1 rounded-full border text-[10px] font-mono font-bold tracking-wider flex items-center gap-1.5 transition-all duration-300 ${theme.badgeBg}`}>
-          {isCloned && (
+          {isCritical && (
             <motion.span
               animate={{ opacity: [1, 0.4, 1] }}
               transition={{ repeat: Infinity, duration: 0.8 }}
@@ -269,13 +302,13 @@ export const VoiceCloneGraph: React.FC<VoiceCloneGraphProps> = ({
         {/* Subtle Horizontal Grid lines & Threshold labels */}
         <div
           className="absolute inset-x-0 border-b border-dashed border-red-500/30 flex items-center justify-between px-2 pointer-events-none z-10"
-          style={{ top: `${(graphMath.thresholdCloneY / SVG_HEIGHT) * 100}%` }}
+          style={{ top: `${(graphMath.thresholdCriticalY / SVG_HEIGHT) * 100}%` }}
         >
           <span className="text-[9px] font-mono font-semibold text-red-400/80 bg-black/80 px-1 rounded">
-            60% CLONE THRESHOLD (HIGH RISK)
+            75% CRITICAL THRESHOLD
           </span>
           <span className="text-[8px] font-mono text-red-400/60 hidden sm:inline">
-            AASIST / WAV2VEC2 SPIKE
+            POLICY ESCALATION LEVEL
           </span>
         </div>
 
@@ -284,12 +317,22 @@ export const VoiceCloneGraph: React.FC<VoiceCloneGraphProps> = ({
           style={{ top: `${(graphMath.thresholdHumanY / SVG_HEIGHT) * 100}%` }}
         >
           <span className="text-[9px] font-mono font-semibold text-emerald-400/80 bg-black/80 px-1 rounded">
-            30% NATURAL HUMAN BASELINE
+            35% HUMAN BASELINE
           </span>
           <span className="text-[8px] font-mono text-emerald-400/60 hidden sm:inline">
             ORGANIC JITTER VERIFIED
           </span>
         </div>
+
+        {/* Live Active State Badge On Graph Viewport */}
+        {isCallActive && (
+          <div className="absolute top-2 left-2 z-20 flex items-center gap-1.5 px-2 py-0.5 rounded bg-black/80 border border-white/10 backdrop-blur-sm">
+            <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: theme.color }} />
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider" style={{ color: theme.color }}>
+              STATE: {effectiveTier.toUpperCase()} • {Math.min(98, Math.round(currentVal))}/100
+            </span>
+          </div>
+        )}
 
         {/* The Dynamic SVG Waveform */}
         <svg
@@ -300,7 +343,7 @@ export const VoiceCloneGraph: React.FC<VoiceCloneGraphProps> = ({
           <defs>
             {/* Area gradient under the line */}
             <linearGradient id="cloneAreaGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={theme.gradientTop} stopOpacity={isCloned ? 0.55 : 0.3} />
+              <stop offset="0%" stopColor={theme.gradientTop} stopOpacity={isCritical ? 0.55 : isHigh ? 0.45 : 0.25} />
               <stop offset="60%" stopColor={theme.gradientBottom} stopOpacity={0.15} />
               <stop offset="100%" stopColor={theme.gradientBottom} stopOpacity={0.0} />
             </linearGradient>
@@ -369,7 +412,7 @@ export const VoiceCloneGraph: React.FC<VoiceCloneGraphProps> = ({
             className="text-xs font-mono font-bold"
             style={{ color: theme.color }}
           >
-            {isCallActive ? `${Math.round(currentVal)}%` : '--'}
+            {isCallActive ? `${Math.min(98, Math.round(currentVal))}%` : '--'}
           </span>
         </div>
       </div>
@@ -377,30 +420,30 @@ export const VoiceCloneGraph: React.FC<VoiceCloneGraphProps> = ({
       {/* Telemetry metadata footer strip */}
       <div className="mt-2 pt-2 border-t border-white/5 grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px] font-mono">
         <div className="flex flex-col">
-          <span className="text-white/40 uppercase">Synthetic Probability</span>
+          <span className="text-white/40 uppercase">Synthetic VAS</span>
           <span className="font-bold text-white text-xs mt-0.5">
-            {isCallActive ? `${Math.round(currentVal)}%` : '--'}
+            {isCallActive ? `${Math.min(98, Math.round(vas))}%` : '--'}
+          </span>
+        </div>
+
+        <div className="flex flex-col">
+          <span className="text-white/40 uppercase">Risk Index (SRI)</span>
+          <span className={`font-bold text-xs mt-0.5 ${effectiveTier === 'Critical' ? 'text-red-400' : effectiveTier === 'High' ? 'text-orange-400' : effectiveTier === 'Suspicious' ? 'text-amber-400' : 'text-emerald-400'}`}>
+            {isCallActive ? `${Math.min(98, Math.round(riskIndex || currentVal))}/100` : '--'}
           </span>
         </div>
 
         <div className="flex flex-col">
           <span className="text-white/40 uppercase">Session Peak</span>
-          <span className={`font-bold text-xs mt-0.5 ${peakVas >= 60 ? 'text-red-400' : peakVas >= 40 ? 'text-amber-400' : 'text-emerald-400'}`}>
-            {isCallActive || peakVas > 0 ? `${Math.round(peakVas)}%` : '--'}
+          <span className={`font-bold text-xs mt-0.5 ${peakVas >= 75 ? 'text-red-400' : peakVas >= 40 ? 'text-amber-400' : 'text-emerald-400'}`}>
+            {isCallActive || peakVas > 0 ? `${Math.min(98, Math.round(peakVas))}/100` : '--'}
           </span>
         </div>
 
         <div className="flex flex-col">
-          <span className="text-white/40 uppercase">Rolling Average</span>
-          <span className="font-bold text-white text-xs mt-0.5">
-            {isCallActive || avgVas > 0 ? `${avgVas}%` : '--'}
-          </span>
-        </div>
-
-        <div className="flex flex-col">
-          <span className="text-white/40 uppercase">Acoustic Status</span>
-          <span className={`font-bold text-xs mt-0.5 truncate ${isCloned ? 'text-red-400' : isSuspicious ? 'text-amber-400' : 'text-emerald-400'}`}>
-            {isCloned ? 'CLONE ELEVATED' : isSuspicious ? 'ANOMALY DETECTED' : isCallActive ? 'HUMAN LOW LEVEL' : 'AWAITING CALL'}
+          <span className="text-white/40 uppercase">Security State</span>
+          <span className={`font-bold text-xs mt-0.5 truncate ${effectiveTier === 'Critical' ? 'text-red-400' : effectiveTier === 'High' ? 'text-orange-400' : effectiveTier === 'Suspicious' ? 'text-amber-400' : 'text-emerald-400'}`}>
+            {isCallActive ? effectiveTier.toUpperCase() : 'STANDBY'}
           </span>
         </div>
       </div>

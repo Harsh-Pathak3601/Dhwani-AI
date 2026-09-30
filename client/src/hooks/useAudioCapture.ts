@@ -143,8 +143,10 @@ export const useAudioCapture = (
 
             if (mediaRecorder && mediaRecorder.state === 'inactive') {
               mediaRecorder.ondataavailable = (event) => {
-                if (event.data.size > 0 && dgWs.readyState === WebSocket.OPEN) {
-                  dgWs.send(event.data);
+                if (event.data.size > 0) {
+                  if (dgWs.readyState === WebSocket.OPEN) {
+                    dgWs.send(event.data);
+                  }
                 }
               };
               mediaRecorder.start(250);
@@ -229,8 +231,13 @@ export const useAudioCapture = (
       isRecordingRef.current = true;
       setIsRecording(true);
 
-      // 2. Initialize Browser DSP Feature Extractor (Parallel Tap — 0ms conversational latency)
+      // 2. Initialize Browser DSP Feature Extractor with 16kHz PCM tap for Modulate Velma Streaming
       featureExtractorRef.current = new AudioFeatureExtractor();
+      featureExtractorRef.current.setPcmCallback((pcmBuffer: ArrayBuffer) => {
+        if (socketRef.current && isRecordingRef.current) {
+          socketRef.current.emit('audio:chunk', pcmBuffer);
+        }
+      });
       featureExtractorRef.current.start(stream, (features: AudioFeatures) => {
         const activeSocket = socketRef.current;
         if (activeSocket) {
@@ -309,6 +316,12 @@ export const useAudioCapture = (
         featureExtractorRef.current.stop();
       }
       featureExtractorRef.current = new AudioFeatureExtractor();
+      featureExtractorRef.current.setPcmCallback((pcmBuffer: ArrayBuffer) => {
+        if (socketRef.current && isRecordingRef.current) {
+          socketRef.current.emit('audio:chunk', pcmBuffer);
+        }
+      });
+
       await featureExtractorRef.current.startFile(
         file, 
         (features: AudioFeatures) => {
@@ -319,6 +332,32 @@ export const useAudioCapture = (
         },
         onEnded
       );
+
+      // In parallel, inspect audio file via Modulate Velma-2 Batch forensic API
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = (reader.result as string)?.split(',')[1];
+        if (base64) {
+          fetch(`${API_URL}/api/modulate/analyze-batch`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              audioBase64: base64,
+              filename: file.name,
+              mimeType: file.type || 'audio/wav',
+            }),
+          })
+            .then(res => res.json())
+            .then(data => {
+              if (data?.result && socketRef.current) {
+                console.info('[Modulate Velma-2 Batch] Analysis result:', data.result);
+                socketRef.current.emit('modulate:batch_result', data.result);
+              }
+            })
+            .catch(err => console.warn('[Modulate] Batch analysis background notice:', err));
+        }
+      };
+      reader.readAsDataURL(file);
 
       // 1. Tapped live MediaStream from file playback -> Deepgram WebSocket streaming
       const fileStream = featureExtractorRef.current.getMediaStream();

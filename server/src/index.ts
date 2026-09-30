@@ -22,6 +22,7 @@ import communityRoutes from './routes/community.js';
 import deepgramRoutes from './routes/deepgram.js';
 import voiceRoutes from './routes/voiceApi.js';
 import enterpriseRoutes from './routes/enterpriseApi.js';
+import modulateRoutes from './routes/modulateApi.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import logger from './utils/logger.js';
 
@@ -87,7 +88,8 @@ app.use(cors({
   },
   credentials: true
 }));
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -97,6 +99,7 @@ app.use('/api/community', communityRoutes);
 app.use('/api/deepgram', deepgramRoutes);
 app.use('/api/voice', voiceRoutes);
 app.use('/api/enterprise', enterpriseRoutes);
+app.use('/api/modulate', modulateRoutes);
 
 // Error Handler
 app.use(errorHandler);

@@ -136,8 +136,8 @@ const SecurityCasesDashboard = () => {
                 <span className="text-white/40 text-[9px] sm:text-[10px] uppercase tracking-wider mb-1 sm:mb-2 flex items-center gap-1">
                   <Activity className="w-3 h-3" /> Peak Risk
                 </span>
-                <span className={`text-lg sm:text-2xl font-bold ${riskColor(selectedCase.peakRiskScore)} leading-none`}>
-                  {selectedCase.peakRiskScore}<span className="text-xs sm:text-sm opacity-60 font-normal">/100</span>
+                <span className={`text-lg sm:text-2xl font-bold ${riskColor(Math.min(98, selectedCase.peakRiskScore))} leading-none`}>
+                  {Math.min(98, selectedCase.peakRiskScore)}<span className="text-xs sm:text-sm opacity-60 font-normal">/100</span>
                 </span>
               </div>
               <div className="glass-card p-2.5 sm:p-4 flex flex-col">
@@ -370,8 +370,8 @@ const SecurityCasesDashboard = () => {
                       </div>
                     </div>
                     <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t border-white/[0.06] sm:border-0">
-                      <span className={`text-lg sm:text-xl font-bold ${riskColor(secCase.peakRiskScore)}`}>
-                        {secCase.peakRiskScore}<span className="text-xs opacity-60 font-normal">/100</span>
+                      <span className={`text-lg sm:text-xl font-bold ${riskColor(Math.min(98, secCase.peakRiskScore))}`}>
+                        {Math.min(98, secCase.peakRiskScore)}<span className="text-xs opacity-60 font-normal">/100</span>
                       </span>
                       <button
                         onClick={(e) => { e.stopPropagation(); setSelectedCase(secCase); }}

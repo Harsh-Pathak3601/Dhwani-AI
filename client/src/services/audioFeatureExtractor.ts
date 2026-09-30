@@ -93,6 +93,45 @@ export class AudioFeatureExtractor {
   private lastGlottalJitter: number = 0.035;
   private windowCycle: number = 0;
 
+  private pcmCallback: ((chunk: ArrayBuffer) => void) | null = null;
+  private processorNode: ScriptProcessorNode | null = null;
+
+  public setPcmCallback(callback: ((chunk: ArrayBuffer) => void) | null) {
+    this.pcmCallback = callback;
+  }
+
+  private setupPcmTap(source: AudioNode) {
+    if (!this.audioCtx) return;
+    try {
+      const processor = this.audioCtx.createScriptProcessor(4096, 1, 1);
+      this.processorNode = processor;
+      const targetSampleRate = 16000;
+      const srcSampleRate = this.audioCtx.sampleRate;
+      const ratio = srcSampleRate / targetSampleRate;
+
+      processor.onaudioprocess = (e) => {
+        if (!this.pcmCallback || !this.isRunning) return;
+        const inputData = e.inputBuffer.getChannelData(0);
+        const outLength = Math.floor(inputData.length / ratio);
+        const pcm16 = new Int16Array(outLength);
+        for (let i = 0; i < outLength; i++) {
+          const srcIdx = Math.floor(i * ratio);
+          const s = Math.max(-1, Math.min(1, inputData[srcIdx]));
+          pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+        }
+        this.pcmCallback(pcm16.buffer);
+      };
+
+      source.connect(processor);
+      const silentGain = this.audioCtx.createGain();
+      silentGain.gain.value = 0;
+      processor.connect(silentGain);
+      silentGain.connect(this.audioCtx.destination);
+    } catch (err) {
+      console.warn('Could not setup PCM tap for streaming:', err);
+    }
+  }
+
   public start(stream: MediaStream, onFeatures: FeatureCallback) {
     if (this.isRunning) return;
 
@@ -133,6 +172,7 @@ export class AudioFeatureExtractor {
       this.sourceNode.connect(hpFilter);
       hpFilter.connect(gainNode);
       gainNode.connect(this.analyser);
+      this.setupPcmTap(gainNode);
 
       this.callback = onFeatures;
       this.isRunning = true;
@@ -166,6 +206,10 @@ export class AudioFeatureExtractor {
     if (this.streamDestination) {
       try { this.streamDestination.disconnect(); } catch (_) {}
       this.streamDestination = null;
+    }
+    if (this.processorNode) {
+      try { this.processorNode.disconnect(); } catch (_) {}
+      this.processorNode = null;
     }
     if (this.audioCtx && this.audioCtx.state !== 'closed') {
       this.audioCtx.close();
@@ -564,6 +608,7 @@ export class AudioFeatureExtractor {
 
     this.streamDestination = this.audioCtx.createMediaStreamDestination();
     source.connect(this.streamDestination);
+    this.setupPcmTap(source);
 
     this.callback = onFeatures;
     this.isRunning = true;

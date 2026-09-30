@@ -17,7 +17,7 @@ const ReportView = () => {
 
   useEffect(() => {
     if (!report) {
-      const timer = setTimeout(() => navigate('/app'), 2000);
+      const timer = setTimeout(() => navigate('/'), 2000);
       return () => clearTimeout(timer);
     }
   }, [report, navigate]);
@@ -108,31 +108,39 @@ const ReportView = () => {
             <span className="font-mono text-base sm:text-lg text-white font-medium truncate">{report.callerNumber}</span>
           </div>
 
-          {report.finalRiskScore !== undefined && (
-            <div className="glass-card p-4 flex flex-col">
-              <span className="text-white/40 text-[10px] uppercase tracking-wider mb-2 flex items-center gap-1">
-                <CheckCircle className="w-3 h-3 text-emerald-400" /> Resolved Risk
-              </span>
-              <span className={`text-2xl font-bold leading-none ${report.finalRiskScore < 40 ? 'text-emerald-400' : report.finalRiskScore < 70 ? 'text-warning' : 'text-danger'}`}>
-                {report.finalRiskScore}<span className="text-sm opacity-60 font-normal">/100</span>
-              </span>
-              {report.livenessScore ? (
-                <span className="text-[10px] text-emerald-400/80 mt-1 font-mono">Liveness Verified ({report.livenessScore}%)</span>
-              ) : (
-                <span className="text-[10px] text-white/40 mt-1 font-mono">{report.finalRiskScore < 40 ? 'Safe State' : 'Elevated'}</span>
-              )}
-            </div>
-          )}
+          {report.finalRiskScore !== undefined && (() => {
+            const finalScore = Math.min(98, report.finalRiskScore);
+            return (
+              <div className="glass-card p-4 flex flex-col">
+                <span className="text-white/40 text-[10px] uppercase tracking-wider mb-2 flex items-center gap-1">
+                  <CheckCircle className="w-3 h-3 text-emerald-400" /> Resolved Risk
+                </span>
+                <span className={`text-2xl font-bold leading-none ${finalScore < 40 ? 'text-emerald-400' : finalScore < 70 ? 'text-warning' : 'text-danger'}`}>
+                  {finalScore}<span className="text-sm opacity-60 font-normal">/100</span>
+                </span>
+                {report.livenessScore ? (
+                  <span className="text-[10px] text-emerald-400/80 mt-1 font-mono">Liveness Verified ({report.livenessScore}%)</span>
+                ) : (
+                  <span className="text-[10px] text-white/40 mt-1 font-mono">{finalScore < 40 ? 'Safe State' : 'Elevated'}</span>
+                )}
+              </div>
+            );
+          })()}
 
-          <div className="glass-card p-4 flex flex-col">
-            <span className="text-white/40 text-[10px] uppercase tracking-wider mb-2 flex items-center gap-1">
-              <Activity className="w-3 h-3 text-orange-400" /> Peak Risk
-            </span>
-            <span className={`text-2xl font-bold leading-none ${report.peakRiskScore >= 70 ? 'text-danger' : report.peakRiskScore >= 40 ? 'text-warning' : 'text-emerald-400'}`}>
-              {report.peakRiskScore}<span className="text-sm opacity-60 font-normal">/100</span>
-            </span>
-            <span className="text-[10px] text-white/40 mt-1 font-mono">Session Max</span>
-          </div>
+          {(() => {
+            const peakScore = Math.min(98, report.peakRiskScore);
+            return (
+              <div className="glass-card p-4 flex flex-col">
+                <span className="text-white/40 text-[10px] uppercase tracking-wider mb-2 flex items-center gap-1">
+                  <Activity className="w-3 h-3 text-orange-400" /> Peak Risk
+                </span>
+                <span className={`text-2xl font-bold leading-none ${peakScore >= 70 ? 'text-danger' : peakScore >= 40 ? 'text-warning' : 'text-emerald-400'}`}>
+                  {peakScore}<span className="text-sm opacity-60 font-normal">/100</span>
+                </span>
+                <span className="text-[10px] text-white/40 mt-1 font-mono">Session Max</span>
+              </div>
+            );
+          })()}
         </motion.div>
 
         {/* Summary */}
@@ -142,7 +150,7 @@ const ReportView = () => {
             {report.scamType}
           </div>
           <p className="text-white/90 leading-relaxed text-sm">
-            {report.summary}
+            {report.summary?.replace(/100\/100/g, `${Math.min(98, report.peakRiskScore)}/100`)}
           </p>
         </motion.div>
 
@@ -274,7 +282,7 @@ const ReportView = () => {
 
         <motion.div variants={itemVariants} className="text-center">
           <button
-            onClick={() => navigate('/app')}
+            onClick={() => navigate('/')}
             className="text-white/40 hover:text-white flex items-center justify-center gap-2 mx-auto text-sm transition-colors py-4"
           >
             <Home className="w-4 h-4" /> Return to Home

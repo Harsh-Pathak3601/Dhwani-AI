@@ -153,88 +153,62 @@ const NumberCheck = () => {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
 
             {/* Left Hero & Details (7 cols) */}
-            <motion.div variants={itemVariants} className="lg:col-span-7 space-y-6 text-left">
+            <motion.div variants={itemVariants} className="lg:col-span-7 space-y-6 text-center lg:text-left flex flex-col items-center lg:items-start">
+
+              <span className="font-kaushan text-amber-400 tracking-widest text-xs sm:text-sm uppercase font-semibold block drop-shadow-[0_0_12px_rgba(255,171,0,0.35)]">
+                AI-POWERED VOICE SECURITY
+              </span>
 
               <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black font-brand-display tracking-tight leading-snug sm:leading-[1.15] break-words">
-                Real-Time Voice Cloning Detection &amp;{' '}
-                <span className="font-serif italic font-normal text-3xl sm:text-5xl lg:text-6xl bg-gradient-to-r from-orange-400 via-amber-300 to-yellow-300 bg-clip-text text-transparent inline-block">
-                  Scam Interception
+                Real-time AI Defense<br />
+                <span className="font-serif italic font-normal text-3xl sm:text-5xl lg:text-6xl bg-gradient-to-r from-orange-400 via-amber-300 to-yellow-300 bg-clip-text text-transparent tracking-wide inline-block drop-shadow-[0_2px_18px_rgba(255,109,0,0.35)]">
+                  Against Voice Scams
                 </span>
               </h1>
 
-              <p className="text-textMain/75 text-base sm:text-lg leading-relaxed max-w-2xl">
-                Protect vulnerable citizens from generative AI voice clones, digital arrest threats, and coercive bank extortion. Our browser-level DSP tap extracts micro-acoustic physical features in real time without sending raw audio to servers.
+              <p className="font-satisfy text-xl sm:text-2xl text-amber-200/90 font-normal tracking-wide drop-shadow-[0_0_8px_rgba(255,171,0,0.25)]">
+                &ldquo;Don&apos;t trust the voice. Verify the action.&rdquo;
               </p>
 
-              {/* Trust Badges */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2">
-                <div className="flex items-center gap-2 p-3 rounded-xl bg-white/[0.03] border border-white/[0.08]">
-                  <Zap className="w-4 h-4 text-amber-400 shrink-0" />
-                  <div className="text-xs">
-                    <p className="font-bold text-white">0ms Latency</p>
-                    <p className="text-white/50 text-[11px]">Parallel Audio Tap</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 p-3 rounded-xl bg-white/[0.03] border border-white/[0.08]">
-                  <Lock className="w-4 h-4 text-orange-400 shrink-0" />
-                  <div className="text-xs">
-                    <p className="font-bold text-white">DPDP 2023</p>
-                    <p className="text-white/50 text-[11px]">Zero Audio Stored</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 p-3 rounded-xl bg-white/[0.03] border border-white/[0.08] col-span-2 sm:col-span-1">
-                  <Activity className="w-4 h-4 text-amber-400 shrink-0" />
-                  <div className="text-xs">
-                    <p className="font-bold text-white">Groq LPU</p>
-                    <p className="text-white/50 text-[11px]">Instant Llama 3 Coaching</p>
-                  </div>
-                </div>
+              {/* Compact Protection Flow */}
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-semibold tracking-wider text-white/80 py-1">
+                <span className="px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/35 shadow-[0_0_10px_rgba(255,171,0,0.2)]">DETECT VOICE</span>
+                <span className="text-white/40">&rarr;</span>
+                <span className="px-2.5 py-1 rounded-md bg-white/[0.04] text-white/70 border border-white/10">SCORE</span>
+                <span className="text-white/40">&rarr;</span>
+                <span className="px-2.5 py-1 rounded-md bg-white/[0.04] text-white/70 border border-white/10">CHALLENGE</span>
+                <span className="text-white/40">&rarr;</span>
+                <span className="px-2.5 py-1 rounded-md bg-white/[0.04] text-white/70 border border-white/10">VERIFY</span>
+                <span className="text-white/40">&rarr;</span>
+                <span className="px-2.5 py-1 rounded-md bg-orange-500/25 text-orange-300 border border-orange-500/40 shadow-[0_0_12px_rgba(255,109,0,0.3)]">PROTECT</span>
               </div>
 
-              {/* Preset Threat Scenarios for Quick Testing */}
-              <div className="space-y-2 pt-2">
-                <div className="flex items-center gap-2">
-                  <span className="font-satisfy text-base text-amber-300 font-normal">
-                    Quick-Test Threat Simulation Scenarios:
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <div
-                    role="option"
-                    aria-selected="false"
-                    tabIndex={0}
-                    onClick={() => setPresetNumber('+91 98765 43210')}
-                    onKeyDown={(e) => e.key === 'Enter' && setPresetNumber('+91 98765 43210')}
-                    className="px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-xs text-white/80 transition-all flex items-center gap-1.5 cursor-pointer"
+              {/* Action Buttons */}
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 sm:gap-4 pt-4 w-full">
+                <Link
+                  to="/session"
+                  className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl font-bold text-sm tracking-wide bg-white text-gray-900 shadow-xl shadow-white/10 hover:bg-amber-100 hover:shadow-[0_0_20px_rgba(255,171,0,0.35)] hover:scale-[1.02] active:scale-[0.98] transition-all"
+                  id="try-dhwani-ai-btn"
+                >
+                  <span>Try Dhwani AI</span>
+                  <span className="text-base font-semibold">&rarr;</span>
+                </Link>
+
+                <a
+                  href="https://drive.google.com/drive/folders/1FW-ac9awRK2J0J1oe7HMyBwVmvjSl6MC"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl font-semibold text-sm tracking-wide text-white/90 bg-white/[0.06] hover:bg-white/[0.12] hover:text-white border border-white/15 hover:border-amber-400/40 backdrop-blur-md hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg"
+                >
+                  <svg
+                    className="w-4 h-4 fill-current text-amber-300"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
                   >
-                    <span className="w-2 h-2 rounded-full bg-red-400"></span>
-                    <span>Digital Arrest Scam (+91 98765 43210)</span>
-                  </div>
-                  <div
-                    role="option"
-                    aria-selected="false"
-                    tabIndex={0}
-                    onClick={() => setPresetNumber('+91 88888 12345')}
-                    onKeyDown={(e) => e.key === 'Enter' && setPresetNumber('+91 88888 12345')}
-                    className="px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-xs text-white/80 transition-all flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <span className="w-2 h-2 rounded-full bg-amber-400"></span>
-                    <span>Voice Clone Fake Emergency (+91 88888 12345)</span>
-                  </div>
-                  <div
-                    role="option"
-                    aria-selected="false"
-                    tabIndex={0}
-                    onClick={() => setPresetNumber('+91 91234 56789')}
-                    onKeyDown={(e) => e.key === 'Enter' && setPresetNumber('+91 91234 56789')}
-                    className="px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-xs text-white/80 transition-all flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <span className="w-2 h-2 rounded-full bg-amber-400"></span>
-                    <span>Verified Legitimate (+91 91234 56789)</span>
-                  </div>
-                </div>
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                  <span>See How It Works</span>
+                </a>
               </div>
             </motion.div>
 

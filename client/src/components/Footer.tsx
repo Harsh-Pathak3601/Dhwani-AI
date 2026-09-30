@@ -1,27 +1,18 @@
 import { Link, useLocation } from 'react-router-dom';
-import { ShieldCheck, Lock, Radio, PhoneCall, LayoutDashboard } from 'lucide-react';
+import { ShieldCheck, Lock, Radio, PhoneCall, LayoutDashboard, Home } from 'lucide-react';
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
   const location = useLocation();
-  const isHome = location.pathname === '/';
-
-  const aiBadgeClass = isHome
-    ? 'text-white/90 bg-white/10 border-white/20'
-    : 'text-amber-300 bg-amber-500/15 border-amber-500/30';
-
-  const logoBoxClass = isHome
-    ? 'bg-gradient-to-br from-emerald-500/30 via-slate-900/60 to-emerald-500/10 border-emerald-500/40 shadow-emerald-500/20'
-    : 'bg-gradient-to-br from-orange-500/30 via-slate-900/60 to-amber-500/10 border-amber-500/40 shadow-orange-500/20';
-
-  const navIconClass = isHome ? 'text-emerald-400/80' : 'text-amber-400/80';
-  const complianceBadgeClass = isHome ? 'text-emerald-400/80' : 'text-amber-400/90';
-  const lockIconClass = isHome ? 'text-cyan-400/70' : 'text-orange-400/80';
-  const pulseDotClass = isHome ? 'bg-emerald-400' : 'bg-amber-400';
+  const aiBadgeClass = 'text-amber-300 bg-amber-500/15 border-amber-500/30';
+  const logoBoxClass = 'bg-gradient-to-br from-orange-500/30 via-slate-900/60 to-amber-500/10 border-amber-500/40 shadow-orange-500/20';
+  const navIconClass = 'text-amber-400/80';
+  const complianceBadgeClass = 'text-amber-400/90';
+  const lockIconClass = 'text-orange-400/80';
+  const pulseDotClass = 'bg-amber-400';
 
   const links = [
-    { name: 'Home', path: '/' },
-    { name: 'Caller Scanner', path: '/app', icon: PhoneCall },
+    { name: 'Home', path: '/', icon: Home },
     { name: 'Call Cockpit', path: '/session', icon: Radio },
     { name: 'Architecture', path: '/architecture', icon: ShieldCheck },
     { name: 'Cases & Triage', path: '/dashboard', icon: LayoutDashboard },

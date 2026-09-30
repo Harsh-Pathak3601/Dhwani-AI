@@ -360,6 +360,8 @@ export const VoiceIntegrityPanel = ({
       <div className="mt-3.5" data-testid="voice-clone-graph-container">
         <VoiceCloneGraph
           vas={stage1.vas || 0}
+          riskIndex={effectiveIndex}
+          riskState={effectiveState}
           isCallActive={Boolean(isCallActive)}
           confidence={stage1.confidence}
         />
@@ -398,21 +400,29 @@ export const VoiceIntegrityPanel = ({
           </div>
 
           {/* Policy Decision & Explanations */}
-          {riskState.explanation && riskState.explanation.length > 0 && (
-            <div className="bg-black/25 rounded-xl p-2.5 border border-white/5">
-              <span className="text-[10px] font-mono text-white/50 uppercase block mb-1">
-                Stage 3 Security Policy Rationale
-              </span>
-              <ul className="text-xs text-white/80 space-y-1">
-                {riskState.explanation.map((exp, idx) => (
-                  <li key={idx} className="flex items-start gap-1.5">
-                    <span className="text-primary">•</span>
-                    <span>{exp}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          {(() => {
+            const explanationList = Array.isArray(riskState.explanation)
+              ? riskState.explanation
+              : riskState.explanation
+                ? [String(riskState.explanation)]
+                : [];
+            if (explanationList.length === 0) return null;
+            return (
+              <div className="bg-black/25 rounded-xl p-2.5 border border-white/5">
+                <span className="text-[10px] font-mono text-white/50 uppercase block mb-1">
+                  Stage 3 Security Policy Rationale
+                </span>
+                <ul className="text-xs text-white/80 space-y-1">
+                  {explanationList.map((exp, idx) => (
+                    <li key={idx} className="flex items-start gap-1.5">
+                      <span className="text-primary">•</span>
+                      <span>{exp}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })()}
 
           {/* Tamper-Evident Ledger Anchor Footer */}
           {evidenceAnchor && (

@@ -84,9 +84,12 @@ export function evaluateSecurityPolicy(
       a !== 'insufficient_audio_signal' &&
       a !== 'neural_vocoder_signature_verified'
     ).length;
-    const artifactBonus = Math.min(6, confirmedArtifacts * 2);
-    rawIndex += artifactBonus;
-    if (artifactBonus > 0) {
+
+    if (confirmedArtifacts > 0) {
+      // Asymptotically absorb uncertainty headroom rather than causing ceiling saturation at 98
+      const headroom = Math.max(0, 97 - rawIndex);
+      const artifactBoost = Math.round(headroom * Math.min(0.45, confirmedArtifacts * 0.15));
+      rawIndex += artifactBoost;
       explanations.push(`${confirmedArtifacts} confirmed synthetic acoustic fingerprint(s) detected.`);
     }
   }
@@ -100,10 +103,12 @@ export function evaluateSecurityPolicy(
   }
 
   if (stage2.profileStatus === 'deviated') {
-    rawIndex += 10;
+    const headroom = Math.max(0, 97 - rawIndex);
+    rawIndex += Math.max(1, Math.round(headroom * 0.3));
   }
 
-  const securityRiskIndex = Math.min(100, Math.max(0, Math.round(rawIndex)));
+  // Scientifically cap forensic certainty at 97-98/100 (never 100/100 certainty in probabilistic ML)
+  const securityRiskIndex = Math.min(97, Math.max(0, Math.round(rawIndex)));
 
   // Determine 5-State Risk Tier per voice policy
   let state: PolicyRiskState = 'Low';
