@@ -21,6 +21,7 @@ import reportRoutes from './routes/reports.js';
 import communityRoutes from './routes/community.js';
 import deepgramRoutes from './routes/deepgram.js';
 import voiceRoutes from './routes/voiceApi.js';
+import enterpriseRoutes from './routes/enterpriseApi.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import logger from './utils/logger.js';
 
@@ -31,6 +32,11 @@ const cleanClientUrl = rawClientUrl.replace(/\/+$/, '');
 const allowedOrigins = Array.from(new Set([cleanClientUrl, 'http://localhost:5173']));
 
 export const app: Express = express();
+
+// Enable trust proxy for reverse proxies (Render, Heroku, Cloudflare)
+// Ensures req.ip accurately reflects the client IP address from X-Forwarded-For
+app.set('trust proxy', 1);
+
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
@@ -90,6 +96,7 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/community', communityRoutes);
 app.use('/api/deepgram', deepgramRoutes);
 app.use('/api/voice', voiceRoutes);
+app.use('/api/enterprise', enterpriseRoutes);
 
 // Error Handler
 app.use(errorHandler);

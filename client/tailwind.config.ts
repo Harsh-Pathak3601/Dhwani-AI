@@ -24,6 +24,10 @@ export default {
         textMain: '#E8E6E1',
       },
       fontFamily: {
+        sans: ['"Plus Jakarta Sans"', 'Inter', 'system-ui', 'sans-serif'],
+        brand: ['Outfit', '"Plus Jakarta Sans"', 'sans-serif'],
+        display: ['Outfit', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
         serif: ['"Instrument Serif"', 'Georgia', 'serif'],
         instrument: ['"Instrument Serif"', 'Georgia', 'serif'],
         kaushan: ['"Kaushan Script"', 'cursive'],

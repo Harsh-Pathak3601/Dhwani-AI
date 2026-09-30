@@ -25,6 +25,7 @@ export default function Footer() {
     { name: 'Call Cockpit', path: '/session', icon: Radio },
     { name: 'Architecture', path: '/architecture', icon: ShieldCheck },
     { name: 'Cases & Triage', path: '/dashboard', icon: LayoutDashboard },
+    { name: 'Enterprise API', path: '/enterprise-api', icon: ShieldCheck },
     { name: 'DPDP Privacy', path: '/consent', icon: Lock },
   ];
 

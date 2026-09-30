@@ -15,7 +15,8 @@ import {
 import {
   TbWaveSine,
   TbLayoutDashboard,
-  TbBinaryTree
+  TbBinaryTree,
+  TbCode
 } from 'react-icons/tb';
 
 export default function Navbar() {
@@ -29,8 +30,9 @@ export default function Navbar() {
     { name: 'Scanner', path: '/app', icon: HiOutlinePhone },
     { name: 'Cockpit', path: '/session', icon: TbWaveSine },
     { name: 'Cases', path: '/dashboard', icon: TbLayoutDashboard },
-    { name: 'Privacy', path: '/consent', icon: HiOutlineLockClosed },
     { name: 'Architecture', path: '/architecture', icon: TbBinaryTree },
+    { name: 'Enterprise API', path: '/enterprise-api', icon: TbCode },
+    { name: 'Privacy', path: '/consent', icon: HiOutlineLockClosed },
   ];
 
   // Smart Scroll: Hide on scroll down, show immediately on scroll up
@@ -74,9 +76,9 @@ export default function Navbar() {
       initial={{ y: 0 }}
       animate={{ y: isVisible ? 0 : -100 }}
       transition={{ duration: 0.25, ease: 'easeInOut' }}
-      className="fixed top-2.5 sm:top-3.5 left-0 right-0 z-50 px-3 sm:px-6 pointer-events-none"
+      className="fixed top-2.5 sm:top-3.5 left-0 right-0 z-50 px-3 sm:px-6 pointer-events-none w-full max-w-full"
     >
-      <div className={`max-w-5xl mx-auto rounded-full bg-[#070b10]/85 hover:bg-[#070b10]/95 backdrop-blur-xl border border-white/[0.08] ${
+      <div className={`w-full max-w-5xl mx-auto rounded-full bg-[#070b10]/85 hover:bg-[#070b10]/95 backdrop-blur-xl border border-white/[0.08] ${
         isCockpit
           ? 'shadow-[inset_0_1px_1px_rgba(255,255,255,0.12)]'
           : 'shadow-[0_16px_36px_-6px_rgba(0,0,0,0.75),inset_0_1px_1px_rgba(255,255,255,0.12)]'
@@ -127,21 +129,18 @@ export default function Navbar() {
           })}
         </nav>
 
-        {/* Right CTA Button (Integrated Live Status Pulse) */}
-        <div className="hidden sm:flex items-center gap-2 shrink-0">
+        {/* Desktop Gateway Status Indicator */}
+        <div className="hidden lg:flex items-center gap-2 shrink-0">
           <Link
-            to="/app"
-            className={`px-3.5 py-1 rounded-full text-xs font-bold text-slate-950 hover:opacity-95 shadow-md transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer hover:scale-[1.02] ${
-              isHome
-                ? 'bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-300 shadow-emerald-500/20'
-                : 'bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-400 shadow-orange-500/30 font-black'
-            }`}
+            to="/enterprise-api"
+            className="px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold text-emerald-400/90 bg-emerald-500/10 border border-emerald-500/25 hover:bg-emerald-500/20 transition-all flex items-center gap-1.5"
+            title="Enterprise API Gateway Operational"
           >
             <span className="relative flex h-1.5 w-1.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-slate-950 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-slate-900"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
             </span>
-            <span>Launch Defense</span>
+            <span>REST/gRPC Gateway</span>
           </Link>
         </div>
 
@@ -191,21 +190,6 @@ export default function Navbar() {
                 </Link>
               );
             })}
-
-            <div className="pt-2 border-t border-white/[0.08]">
-              <Link
-                to="/app"
-                onClick={() => setMobileMenuOpen(false)}
-                className={`w-full py-2 rounded-full text-center text-xs font-bold text-slate-950 shadow-md flex items-center justify-center gap-1.5 ${
-                  isHome
-                    ? 'bg-gradient-to-r from-emerald-400 to-teal-300'
-                    : 'bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-400 font-black'
-                }`}
-              >
-                <HiOutlineShieldCheck className="w-4 h-4" />
-                <span>Launch Defense</span>
-              </Link>
-            </div>
           </motion.div>
         )}
       </AnimatePresence>

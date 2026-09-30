@@ -102,9 +102,9 @@ const SecurityCasesDashboard = () => {
   if (selectedCase) {
     const badge = statusBadge(selectedCase.investigationStatus);
     return (
-      <div className="min-h-screen bg-transparent text-white px-4 sm:px-8 pt-4 sm:pt-6 pb-28 max-w-5xl mx-auto">
+      <div className="min-h-screen bg-transparent text-white px-3 sm:px-6 md:px-8 pt-4 sm:pt-6 pb-28 w-full max-w-5xl mx-auto overflow-hidden">
         <div className="animated-grid-bg opacity-40" />
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative z-10">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative z-10 w-full min-w-0">
           {/* Back Button */}
           <button
             onClick={() => setSelectedCase(null)}
@@ -114,39 +114,39 @@ const SecurityCasesDashboard = () => {
           </button>
 
           {/* Header */}
-          <div className="flex items-center gap-4 mb-8">
-            <div className={`w-14 h-14 ${badge.bg} rounded-2xl flex items-center justify-center border ${badge.border}`}>
-              <badge.icon className={`w-7 h-7 ${badge.text}`} />
+          <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
+            <div className={`w-12 h-12 sm:w-14 sm:h-14 ${badge.bg} rounded-2xl flex items-center justify-center border ${badge.border} shrink-0`}>
+              <badge.icon className={`w-6 h-6 sm:w-7 sm:h-7 ${badge.text}`} />
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-white tracking-tight">Case Detail</h1>
-              <div className="flex items-center gap-3 mt-1">
-                <span className="font-mono text-white/60">{selectedCase.callerNumber}</span>
-                <span className={`text-xs px-2 py-0.5 rounded-full ${badge.bg} ${badge.text} font-semibold`}>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Case Detail</h1>
+              <div className="flex items-center gap-2 sm:gap-3 mt-1 flex-wrap">
+                <span className="font-mono text-white/60 text-xs sm:text-sm truncate max-w-[200px] sm:max-w-none">{selectedCase.callerNumber}</span>
+                <span className={`text-[10px] sm:text-xs px-2 py-0.5 rounded-full ${badge.bg} ${badge.text} font-semibold shrink-0`}>
                   {badge.label}
                 </span>
               </div>
             </div>
           </div>
 
-          <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-4">
+          <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-4 w-full">
             {/* Quick Stats */}
-            <motion.div variants={itemVariants} className="grid grid-cols-3 gap-3">
-              <div className="glass-card p-4 flex flex-col">
-                <span className="text-white/40 text-[10px] uppercase tracking-wider mb-2 flex items-center gap-1">
+            <motion.div variants={itemVariants} className="grid grid-cols-3 gap-2 sm:gap-3">
+              <div className="glass-card p-2.5 sm:p-4 flex flex-col">
+                <span className="text-white/40 text-[9px] sm:text-[10px] uppercase tracking-wider mb-1 sm:mb-2 flex items-center gap-1">
                   <Activity className="w-3 h-3" /> Peak Risk
                 </span>
-                <span className={`text-2xl font-bold ${riskColor(selectedCase.peakRiskScore)} leading-none`}>
-                  {selectedCase.peakRiskScore}<span className="text-sm opacity-60 font-normal">/100</span>
+                <span className={`text-lg sm:text-2xl font-bold ${riskColor(selectedCase.peakRiskScore)} leading-none`}>
+                  {selectedCase.peakRiskScore}<span className="text-xs sm:text-sm opacity-60 font-normal">/100</span>
                 </span>
               </div>
-              <div className="glass-card p-4 flex flex-col">
-                <span className="text-white/40 text-[10px] uppercase tracking-wider mb-2">Scam Type</span>
-                <span className="text-sm text-warning font-semibold">{selectedCase.scamType}</span>
+              <div className="glass-card p-2.5 sm:p-4 flex flex-col">
+                <span className="text-white/40 text-[9px] sm:text-[10px] uppercase tracking-wider mb-1 sm:mb-2">Scam Type</span>
+                <span className="text-xs sm:text-sm text-warning font-semibold truncate">{selectedCase.scamType}</span>
               </div>
-              <div className="glass-card p-4 flex flex-col">
-                <span className="text-white/40 text-[10px] uppercase tracking-wider mb-2">Date</span>
-                <span className="text-sm text-white/70">{new Date(selectedCase.createdAt).toLocaleDateString()}</span>
+              <div className="glass-card p-2.5 sm:p-4 flex flex-col">
+                <span className="text-white/40 text-[9px] sm:text-[10px] uppercase tracking-wider mb-1 sm:mb-2">Date</span>
+                <span className="text-xs sm:text-sm text-white/70">{new Date(selectedCase.createdAt).toLocaleDateString()}</span>
               </div>
             </motion.div>
 
@@ -237,18 +237,18 @@ const SecurityCasesDashboard = () => {
 
   // ── MAIN DASHBOARD LIST VIEW ──
   return (
-    <div className="min-h-screen bg-transparent text-white px-4 sm:px-8 pt-4 sm:pt-6 pb-28 max-w-6xl mx-auto">
+    <div className="min-h-screen bg-transparent text-white px-3 sm:px-6 md:px-8 pt-4 sm:pt-6 pb-28 w-full max-w-6xl mx-auto overflow-hidden">
       <div className="animated-grid-bg opacity-40" />
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative z-10"
+        className="relative z-10 w-full max-w-full min-w-0"
       >
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-2 sm:mt-6 mb-6 sm:mb-8">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-amber-500/10 rounded-2xl p-1.5 flex items-center justify-center border border-amber-500/30 shadow-[0_0_30px_rgba(255,109,0,0.25)] overflow-hidden backdrop-blur-md">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-2 sm:mt-6 mb-5 sm:mb-8 w-full">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-amber-500/10 rounded-2xl p-1.5 flex items-center justify-center border border-amber-500/30 shadow-[0_0_30px_rgba(255,109,0,0.25)] overflow-hidden backdrop-blur-md shrink-0">
               <img
                 src="/Dhwani_AI_transparent_512x512.png"
                 alt="Dhwani AI"
@@ -257,24 +257,24 @@ const SecurityCasesDashboard = () => {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold text-white tracking-tight">Security Cases</h1>
-                <span className="font-brand text-[11px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-500/15 text-white border border-amber-500/30" style={{ fontFamily: "'Outfit', sans-serif" }}>
+                <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Security Cases</h1>
+                <span className="font-brand text-[10px] sm:text-[11px] font-black uppercase tracking-wider px-2 sm:px-2.5 py-0.5 rounded-full bg-amber-500/15 text-white border border-amber-500/30" style={{ fontFamily: "'Outfit', sans-serif" }}>
                   Dhwani AI
                 </span>
               </div>
-              <p className="text-white/40 text-sm">Investigation &amp; Triage Dashboard</p>
+              <p className="text-white/40 text-xs sm:text-sm">Investigation &amp; Triage Dashboard</p>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+          <div className="flex items-center justify-between sm:justify-end gap-2.5 sm:gap-3 w-full sm:w-auto">
             {/* Role Switcher */}
-            <div className="relative">
-              <div className="flex items-center gap-2 text-white/50 text-xs mb-1">
+            <div className="relative flex-1 sm:flex-initial">
+              <div className="flex items-center gap-1.5 text-white/50 text-[11px] sm:text-xs mb-1">
                 <Users className="w-3 h-3" /> Viewing as
               </div>
               <select
                 value={currentRole}
                 onChange={(e) => setCurrentRole(e.target.value as UserRole)}
-                className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white appearance-none cursor-pointer focus:outline-none focus:border-amber-500/50 pr-8"
+                className="w-full sm:w-auto bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs sm:text-sm text-white appearance-none cursor-pointer focus:outline-none focus:border-amber-500/50 pr-8"
                 style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='rgba(255,255,255,0.5)' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E\")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center' }}
               >
                 {(Object.entries(roleLabels) as [UserRole, string][]).map(([value, label]) => (
@@ -286,39 +286,39 @@ const SecurityCasesDashboard = () => {
             <button
               onClick={handleSeedDemo}
               disabled={seeding}
-              className="py-2 px-4 glass-card hover:bg-white/10 rounded-xl text-sm font-medium transition-all flex items-center gap-2 text-white/70 mt-5 cursor-pointer"
+              className="py-2 px-3 sm:px-4 glass-card hover:bg-white/10 rounded-xl text-xs sm:text-sm font-medium transition-all flex items-center gap-1.5 sm:gap-2 text-white/70 mt-5 shrink-0 cursor-pointer"
             >
-              {seeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Database className="w-4 h-4" />}
-              {seeding ? 'Seeding...' : 'Seed Demo'}
+              {seeding ? <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" /> : <Database className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
+              <span>{seeding ? 'Seeding...' : 'Seed Demo'}</span>
             </button>
           </div>
         </div>
 
         {/* Search Bar */}
-        <div className="relative mb-6">
+        <div className="relative mb-4 sm:mb-6 w-full max-w-full">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by caller number..."
-            className="w-full bg-white/5 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-amber-500/50 transition-colors"
+            className="w-full bg-white/5 border border-white/10 rounded-xl pl-11 pr-4 py-2.5 sm:py-3 text-xs sm:text-sm text-white placeholder-white/30 focus:outline-none focus:border-amber-500/50 transition-colors"
           />
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-2 scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none]">
+        <div className="flex gap-2 mb-5 sm:mb-6 overflow-x-auto pb-2 w-full max-w-full min-w-0 scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none]">
           {filterTabs.map((tab) => (
             <button
               key={tab.value}
               onClick={() => setActiveFilter(tab.value)}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2 ${activeFilter === tab.value
+              className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2 shrink-0 ${activeFilter === tab.value
                   ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm shadow-orange-500/20'
                   : 'text-white/50 hover:text-white/70 hover:bg-white/5 border border-transparent'
                 }`}
             >
               {tab.label}
-              <span className={`text-xs px-1.5 py-0.5 rounded-full ${activeFilter === tab.value ? 'bg-amber-500/30 text-amber-300' : 'bg-white/10 text-white/40'
+              <span className={`text-[11px] sm:text-xs px-1.5 py-0.5 rounded-full ${activeFilter === tab.value ? 'bg-amber-500/30 text-amber-300' : 'bg-white/10 text-white/40'
                 }`}>
                 {tab.count}
               </span>
@@ -328,52 +328,54 @@ const SecurityCasesDashboard = () => {
 
         {/* Cases List */}
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20">
+          <div className="flex flex-col items-center justify-center py-20 w-full">
             <Loader2 className="w-8 h-8 text-primary animate-spin mb-4" />
             <p className="text-white/40 text-sm">Loading cases...</p>
           </div>
         ) : data.reports.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 glass-card">
+          <div className="flex flex-col items-center justify-center py-20 glass-card w-full">
             <Shield className="w-12 h-12 text-white/20 mb-4" />
             <p className="text-white/50 text-sm mb-2">No security cases found</p>
             <p className="text-white/30 text-xs">Click "Seed Demo" to generate sample data for testing</p>
           </div>
         ) : (
-          <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-3">
+          <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-3 w-full max-w-full min-w-0">
             {data.reports.map((secCase) => {
               const badge = statusBadge(secCase.investigationStatus);
               return (
                 <motion.div
                   key={secCase._id}
                   variants={itemVariants}
-                  className="glass-card p-4 hover:bg-white/[0.06] transition-colors cursor-pointer"
+                  className="glass-card p-3 sm:p-4 hover:bg-white/[0.06] transition-colors cursor-pointer w-full max-w-full overflow-hidden"
                   onClick={() => setSelectedCase(secCase)}
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
+                    <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
                       <div className={`w-10 h-10 ${badge.bg} rounded-xl flex items-center justify-center border ${badge.border} shrink-0`}>
                         <badge.icon className={`w-5 h-5 ${badge.text}`} />
                       </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-3 flex-wrap">
-                          <span className="font-mono text-white font-medium">{secCase.callerNumber}</span>
-                          <span className={`text-xs px-2 py-0.5 rounded-full ${badge.bg} ${badge.text} font-semibold`}>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono text-white font-medium text-xs sm:text-sm truncate max-w-[170px] min-[400px]:max-w-[220px] sm:max-w-none">
+                            {secCase.callerNumber}
+                          </span>
+                          <span className={`text-[10px] sm:text-xs px-2 py-0.5 rounded-full ${badge.bg} ${badge.text} font-semibold shrink-0`}>
                             {badge.label}
                           </span>
                         </div>
-                        <div className="flex items-center gap-3 mt-1 text-xs text-white/40">
-                          <span className="inline-block px-2 py-0.5 bg-warning/10 text-warning rounded-full">{secCase.scamType}</span>
+                        <div className="flex items-center gap-2 mt-1 text-[11px] sm:text-xs text-white/40 flex-wrap">
+                          <span className="inline-block px-2 py-0.5 bg-warning/10 text-warning rounded-full text-[10px] sm:text-xs">{secCase.scamType}</span>
                           <span>{new Date(secCase.createdAt).toLocaleDateString()}</span>
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      <span className={`text-xl font-bold ${riskColor(secCase.peakRiskScore)}`}>
+                    <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t border-white/[0.06] sm:border-0">
+                      <span className={`text-lg sm:text-xl font-bold ${riskColor(secCase.peakRiskScore)}`}>
                         {secCase.peakRiskScore}<span className="text-xs opacity-60 font-normal">/100</span>
                       </span>
                       <button
                         onClick={(e) => { e.stopPropagation(); setSelectedCase(secCase); }}
-                        className="p-2 hover:bg-white/10 rounded-lg transition-colors text-white/50 hover:text-white"
+                        className="p-1.5 sm:p-2 hover:bg-white/10 rounded-lg transition-colors text-white/50 hover:text-white"
                         title="View Details"
                       >
                         <Eye className="w-4 h-4" />

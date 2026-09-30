@@ -8,6 +8,7 @@ import CallSession from './components/CallSession';
 import ReportView from './components/ReportView';
 import SecurityCasesDashboard from './components/SecurityCasesDashboard';
 import ArchitectureView from './components/ArchitectureView';
+import EnterpriseApiPortal from './components/EnterpriseApiPortal';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import { RoleProvider } from './context/RoleContext';
@@ -45,7 +46,7 @@ function PageWrapper({ children }: { children: ReactNode }) {
       initial="initial"
       animate="animate"
       exit="exit"
-      className="min-h-dvh"
+      className="min-h-dvh w-full max-w-full min-w-0"
     >
       {children}
     </motion.div>
@@ -122,6 +123,22 @@ function AnimatedRoutes() {
             </PageWrapper>
           }
         />
+        <Route
+          path="/enterprise-api"
+          element={
+            <PageWrapper>
+              <EnterpriseApiPortal />
+            </PageWrapper>
+          }
+        />
+        <Route
+          path="/integrations"
+          element={
+            <PageWrapper>
+              <EnterpriseApiPortal />
+            </PageWrapper>
+          }
+        />
       </Routes>
     </AnimatePresence>
   );
@@ -133,9 +150,9 @@ function Layout() {
   const isHomePage = location.pathname === '/';
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#0D1B2A] text-white relative">
+    <div className="flex flex-col min-h-screen bg-[#0D1B2A] text-white relative w-full max-w-full overflow-x-hidden">
       {isHomePage ? (
-        <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden max-w-full">
           <video
             id="home-bg-video"
             autoPlay
@@ -156,11 +173,12 @@ function Layout() {
           <div className="absolute inset-0 bg-gradient-to-t from-[#0D1B2A]/90 via-transparent to-black/35 pointer-events-none" />
         </div>
       ) : (
-        <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-black">
+        <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-black max-w-full">
           <iframe
             src="/nexus-cyber.html"
             title="Nexus Cyber Background"
-            className="w-full h-full border-0 pointer-events-none scale-100 opacity-90"
+            className="w-full h-full border-0 pointer-events-none scale-100 opacity-90 block"
+            style={{ width: '100%', height: '100%', maxWidth: '100vw' }}
             tabIndex={-1}
             aria-hidden="true"
           />
@@ -168,9 +186,9 @@ function Layout() {
           <div className="absolute inset-0 bg-[#070b10]/40 backdrop-blur-[0.5px] pointer-events-none" />
         </div>
       )}
-      <div className="relative z-10 flex flex-col min-h-screen flex-1">
+      <div className="relative z-10 flex flex-col min-h-screen flex-1 w-full max-w-full min-w-0">
         <Navbar />
-        <div className={`flex-1 flex flex-col ${!isHomePage ? 'pt-20 sm:pt-24' : ''}`}>
+        <div className={`flex-1 flex flex-col w-full max-w-full min-w-0 ${!isHomePage ? 'pt-20 sm:pt-24' : ''}`}>
           <AnimatedRoutes />
         </div>
         {!isCockpit && <Footer />}
