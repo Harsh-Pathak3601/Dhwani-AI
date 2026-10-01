@@ -70,7 +70,7 @@ export function evaluateSecurityPolicy(
 
     if (primaryAcoustic >= 50 && primaryImpersonation >= 50) {
       // Cross-modal reinforcement: both acoustic deepfake and impersonation detected
-      rawIndex = Math.min(95, Math.round((primaryAcoustic * 0.5) + (primaryImpersonation * 0.5) + 6));
+      rawIndex = Math.min(93, Math.round((primaryAcoustic * 0.5) + (primaryImpersonation * 0.5) + 4));
     } else {
       // Anchored to the dominant threat modality
       rawIndex = Math.max(primaryAcoustic, primaryImpersonation);
@@ -87,8 +87,8 @@ export function evaluateSecurityPolicy(
 
     if (confirmedArtifacts > 0) {
       // Asymptotically absorb uncertainty headroom rather than causing ceiling saturation at 98
-      const headroom = Math.max(0, 97 - rawIndex);
-      const artifactBoost = Math.round(headroom * Math.min(0.45, confirmedArtifacts * 0.15));
+      const headroom = Math.max(0, 94 - rawIndex);
+      const artifactBoost = Math.round(headroom * Math.min(0.40, confirmedArtifacts * 0.12));
       rawIndex += artifactBoost;
       explanations.push(`${confirmedArtifacts} confirmed synthetic acoustic fingerprint(s) detected.`);
     }
@@ -103,12 +103,12 @@ export function evaluateSecurityPolicy(
   }
 
   if (stage2.profileStatus === 'deviated') {
-    const headroom = Math.max(0, 97 - rawIndex);
+    const headroom = Math.max(0, 94 - rawIndex);
     rawIndex += Math.max(1, Math.round(headroom * 0.3));
   }
 
-  // Scientifically cap forensic certainty at 97-98/100 (never 100/100 certainty in probabilistic ML)
-  const securityRiskIndex = Math.min(97, Math.max(0, Math.round(rawIndex)));
+  // Scientifically cap forensic certainty at 94 max (preserving natural probabilistic headroom)
+  const securityRiskIndex = Math.min(94, Math.max(0, Math.round(rawIndex)));
 
   // Determine 5-State Risk Tier per voice policy
   let state: PolicyRiskState = 'Low';

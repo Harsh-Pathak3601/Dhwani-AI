@@ -30,11 +30,15 @@ const riskColor = (score: number) => {
 };
 
 const toExportable = (c: SecurityCase): ExportableReport => ({
+  sessionId: c.sessionId,
   callerNumber: c.callerNumber,
   peakRiskScore: c.peakRiskScore,
   scamType: c.scamType,
   summary: c.summary,
   redFlags: c.redFlags,
+  psychologicalTactics: c.psychologicalTactics,
+  evidenceLog: c.evidenceLog,
+  recommendedAction: c.recommendedAction,
   formalComplaintText: c.formalComplaintText || '',
   investigationStatus: c.investigationStatus,
   investigatorNotes: c.investigatorNotes,

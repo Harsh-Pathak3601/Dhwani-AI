@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PhoneOff, Phone, Wifi, WifiOff, Loader2, Languages, FileAudio } from 'lucide-react';
+import { PhoneOff, Phone, Wifi, WifiOff, Loader2, Languages, FileAudio, Smartphone, ShieldAlert } from 'lucide-react';
 import { useSession } from '../hooks/useSession';
 import { useSessionStore } from '../store/useSessionStore';
 import type { ReportData } from '../services/reportPDF';
@@ -9,6 +9,7 @@ import TranscriptFeed from './TranscriptFeed';
 import CoachingCard from './CoachingCard';
 import VolumeMonitor from './VolumeMonitor';
 import { VoiceIntegrityPanel } from './VoiceIntegrityPanel';
+import MelSpectrogram from './MelSpectrogram';
 import { PreTransactionWarningModal } from './PreTransactionWarningModal';
 import { OOBVerificationModal } from './OOBVerificationModal';
 
@@ -82,6 +83,33 @@ const CallSession = () => {
       resetSessionState();
     }
   }, []);
+
+  // Automatically open OOB verification modal when a critical transaction hold occurs
+  useEffect(() => {
+    if (activeHold && activeHold.status === 'held') {
+      setIsOOBModalOpen(true);
+    }
+  }, [activeHold]);
+
+  // Lock body scroll without page layout shifting
+  useEffect(() => {
+    const isModalOpen = Boolean((activeHold && activeHold.status === 'held') || isOOBModalOpen);
+    if (isModalOpen) {
+      const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth;
+      const prevOverflow = document.body.style.overflow;
+      const prevPaddingRight = document.body.style.paddingRight;
+
+      document.body.style.overflow = 'hidden';
+      if (scrollBarWidth > 0) {
+        document.body.style.paddingRight = `${scrollBarWidth}px`;
+      }
+
+      return () => {
+        document.body.style.overflow = prevOverflow;
+        document.body.style.paddingRight = prevPaddingRight;
+      };
+    }
+  }, [activeHold, isOOBModalOpen]);
 
   const isCallActive = sessionStarted || sessionActive;
 
@@ -225,8 +253,10 @@ const CallSession = () => {
       setIsEndingCall(false);
       if (reportResult.report) {
         navigate('/report', { state: { report: reportResult.report } });
+      } else if (reportResult.safe) {
+        navigate('/app');
       } else {
-        // Safe or summary session: build clean report and navigate to /report
+        // Fallback for unsafe session without explicit report: build report and navigate to /report
         const report = createFallbackReport();
         navigate('/report', { state: { report } });
       }
@@ -310,8 +340,8 @@ const CallSession = () => {
 
       {/* Main Cockpit Container */}
       <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-6 flex-1 flex flex-col">
-        {/* Command Bar Header */}
-        <div className="glass-card flex flex-col md:flex-row items-center justify-between p-3.5 sm:p-4 mb-4 border-white/10 gap-3 rounded-2xl w-full">
+        {/* Unified Command Bar Header */}
+        <div className="glass-card flex flex-col md:flex-row items-center justify-between p-3.5 sm:p-4 mb-5 border-white/10 gap-4 rounded-2xl w-full">
           <div className="flex items-center gap-3 w-full md:w-auto">
             <div className="w-11 h-11 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center overflow-hidden p-1 shadow-sm shrink-0">
               <img
@@ -332,42 +362,59 @@ const CallSession = () => {
             </div>
           </div>
 
-          {/* Language Selector & Status */}
-          <div className="flex items-center gap-2 sm:gap-3 w-full md:w-auto justify-between md:justify-end flex-wrap">
-            <div className="flex items-center gap-0.5 sm:gap-1 bg-white/5 border border-white/10 rounded-xl p-0.5 sm:p-1 text-xs max-w-full overflow-x-auto scrollbar-none">
-              <button
-                onClick={() => setSpeechLanguage('hi-IN')}
-                className={`px-2 sm:px-3 py-1 rounded-lg transition-all font-semibold cursor-pointer text-[11px] sm:text-xs ${speechLanguage === 'hi-IN'
-                    ? 'bg-gradient-to-r from-orange-500 to-amber-400 text-slate-950 font-black shadow-sm'
-                    : 'text-white/60 hover:text-white'
-                  }`}
-                title="Hindi & Hinglish conversational detection"
-              >
-                हिंदी / Hinglish
-              </button>
-              <button
-                onClick={() => setSpeechLanguage('en-IN')}
-                className={`px-2 sm:px-3 py-1 rounded-lg transition-all font-semibold cursor-pointer text-[11px] sm:text-xs ${speechLanguage === 'en-IN'
-                    ? 'bg-gradient-to-r from-orange-500 to-amber-400 text-slate-950 font-black shadow-sm'
-                    : 'text-white/60 hover:text-white'
-                  }`}
-                title="Indian English detection"
-              >
-                English (IN)
-              </button>
-              <button
-                onClick={() => setSpeechLanguage('en-US')}
-                className={`px-2 sm:px-2.5 py-1 rounded-lg transition-all font-semibold cursor-pointer text-[11px] sm:text-xs ${speechLanguage === 'en-US'
-                    ? 'bg-gradient-to-r from-orange-500 to-amber-400 text-slate-950 font-black shadow-sm'
-                    : 'text-white/60 hover:text-white'
-                  }`}
-                title="Global English detection"
-              >
-                EN (US)
-              </button>
-            </div>
+          {/* Unified Controls (Live Mic + Test File OR End Call) & Status */}
+          <div className="flex items-center gap-3 sm:gap-4 w-full md:w-auto justify-between md:justify-end flex-wrap">
+            {!isCallActive ? (
+              <div className="flex items-center gap-2.5">
+                <motion.button
+                  whileTap={{ scale: 0.94 }}
+                  onClick={handleStartCall}
+                  aria-label="Start call"
+                  data-testid="start-call-button"
+                  className="px-5 h-10 rounded-full flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-400 hover:opacity-95 text-slate-950 font-black text-xs sm:text-sm shadow-[0_0_20px_rgba(255,109,0,0.4)] transition-all cursor-pointer whitespace-nowrap"
+                >
+                  <Phone className="w-4 h-4 fill-current" />
+                  <span className="font-semibold tracking-wide">Live Mic</span>
+                </motion.button>
 
-            <div className="text-right flex flex-col items-end shrink-0 pl-1">
+                <label
+                  className="px-4 h-10 rounded-full flex items-center justify-center gap-2 bg-white/10 hover:bg-white/15 border border-amber-500/30 text-white font-medium text-xs sm:text-sm shadow-md transition-all cursor-pointer whitespace-nowrap"
+                  title="Select an audio or video file (e.g., MP4, MP3, WAV) to test voice authenticity"
+                >
+                  <FileAudio className="w-4 h-4 text-amber-400" />
+                  <span className="font-semibold">Test File</span>
+                  <input
+                    type="file"
+                    accept="audio/*,video/*,.mp4,.mp3,.wav,.webm,.m4a"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                  />
+                </label>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <div className="w-20 px-1 hidden sm:block">
+                  <VolumeMonitor isRecording={isRecording && isCallActive} />
+                </div>
+                <motion.button
+                  whileTap={{ scale: 0.94 }}
+                  onClick={handleEndCall}
+                  aria-label="End call"
+                  data-testid="end-call-button"
+                  className={`px-5 h-10 rounded-full flex items-center justify-center gap-2 text-white font-bold text-xs sm:text-sm shadow-lg transition-all cursor-pointer whitespace-nowrap ${
+                    voiceRiskState.state === 'Critical'
+                      ? 'bg-danger shadow-[0_0_20px_rgba(226,75,74,0.6)] animate-pulse'
+                      : 'bg-red-600 hover:bg-red-500 border border-red-500/50 shadow-md shadow-red-500/20'
+                  }`}
+                >
+                  <PhoneOff className="w-4 h-4" />
+                  <span>End Call</span>
+                </motion.button>
+              </div>
+            )}
+
+            {/* Standby / Live Indicator & Timer */}
+            <div className="text-right flex flex-col items-end shrink-0 pl-3 border-l border-white/10">
               <div className="flex items-center gap-1.5 mb-0.5">
                 <span className="relative flex h-2 w-2">
                   {isCallActive ? (
@@ -388,90 +435,42 @@ const CallSession = () => {
           </div>
         </div>
 
-        {/* Top First-View Quick-Test Bar (Always Visible inside the Card) */}
-        <div className="mb-5 p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-orange-950/40 via-[#0B1523]/95 to-amber-950/40 border border-amber-500/30 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4),0_0_20px_rgba(255,109,0,0.18)] flex flex-col md:flex-row items-center justify-between gap-4">
-          {!isCallActive ? (
-            <>
-              <div className="space-y-0.5 text-left">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-sm font-bold text-white tracking-tight">Voice Clone &amp; Scam Detection Engine</span>
-                  <span className="text-[10px] font-bold text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/30 tracking-wider">READY TO TEST</span>
-                </div>
-                <p className="text-xs text-white/60">
-                  Select an input source to test real-time AI voice clone and acoustic threat detection:
-                </p>
+        {/* Sticky High-Priority Out-Of-Band Alert Notification Banner */}
+        {activeHold && activeHold.status === 'held' && !isOOBModalOpen && (
+          <div className="mb-5 p-3.5 sm:p-4 bg-gradient-to-r from-red-600/25 via-amber-500/20 to-red-600/25 border-2 border-red-500/70 rounded-2xl flex flex-col sm:flex-row items-center justify-between shadow-[0_0_35px_rgba(226,75,74,0.35)] gap-3 animate-pulse">
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <div className="p-2.5 bg-red-500/20 border border-red-500/40 rounded-xl text-red-400 shrink-0">
+                <Smartphone className="w-5 h-5 animate-bounce" />
               </div>
-
-              <div className="flex items-center gap-2.5 shrink-0 w-full md:w-auto justify-end">
-                <motion.button
-                  whileTap={{ scale: 0.94 }}
-                  onClick={handleStartCall}
-                  aria-label="Start live mic test"
-                  data-testid="start-call-button"
-                  className="flex-1 md:flex-initial px-6 h-11 rounded-full flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-400 hover:opacity-95 text-slate-950 font-black text-xs sm:text-sm shadow-[0_0_25px_rgba(255,109,0,0.45)] transition-all cursor-pointer whitespace-nowrap"
-                >
-                  <Phone className="w-4 h-4 fill-current" />
-                  <span className="font-semibold tracking-wide">Live Mic</span>
-                </motion.button>
-
-                <label
-                  className="flex-1 md:flex-initial px-5 h-11 rounded-full flex items-center justify-center gap-2 bg-white/10 hover:bg-white/15 border border-amber-500/30 text-white font-medium text-xs sm:text-sm shadow-md transition-all cursor-pointer whitespace-nowrap"
-                  title="Select an audio or video file (e.g., MP4, MP3, WAV) to test voice authenticity"
-                >
-                  <FileAudio className="w-4 h-4 text-amber-400" />
-                  <span className="font-semibold">Test File</span>
-                  <input
-                    type="file"
-                    accept="audio/*,video/*,.mp4,.mp3,.wav,.webm,.m4a"
-                    className="hidden"
-                    onChange={handleFileUpload}
-                  />
-                </label>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="space-y-0.5 text-left">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-sm font-bold text-white tracking-tight">Active Call Monitoring</span>
-                  <span className="text-[10px] font-bold text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/30 tracking-wider flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                    LIVE TAP ACTIVE
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black text-red-300 uppercase tracking-wider">
+                    🚨 Out-Of-Band Verification Pending
+                  </span>
+                  <span className="text-[10px] bg-red-500/30 text-red-200 px-2 py-0.5 rounded-full font-mono font-bold">
+                    HELD
                   </span>
                 </div>
-                <p className="text-xs text-white/60">
-                  Real-time DSP acoustic feature tap &amp; semantic scam detection stream active.
+                <p className="text-xs text-white/80 mt-0.5">
+                  High-stakes transfer of <strong>{activeHold.heldAmount || '₹50,00,000'}</strong> intercepted. Requires independent secondary device authorization.
                 </p>
               </div>
-
-              <div className="flex items-center gap-3 shrink-0 w-full md:w-auto justify-end">
-                <div className="w-20 px-1">
-                  <VolumeMonitor isRecording={isRecording && isCallActive} />
-                </div>
-                <motion.button
-                  whileTap={{ scale: 0.94 }}
-                  onClick={handleEndCall}
-                  aria-label="End call"
-                  data-testid="end-call-button"
-                  className={`px-5 h-11 rounded-full flex items-center justify-center gap-2 text-white font-bold text-xs sm:text-sm shadow-lg transition-all cursor-pointer whitespace-nowrap ${
-                    voiceRiskState.state === 'Critical'
-                      ? 'bg-danger shadow-[0_0_20px_rgba(226,75,74,0.6)] animate-pulse'
-                      : 'bg-red-600/90 hover:bg-red-500 border border-red-500/50 shadow-md shadow-red-500/20'
-                  }`}
-                >
-                  <PhoneOff className="w-4 h-4" />
-                  <span>End Call</span>
-                </motion.button>
-              </div>
-            </>
-          )}
-        </div>
+            </div>
+            <button
+              onClick={() => setIsOOBModalOpen(true)}
+              className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold text-xs rounded-xl shadow-lg transition-transform active:scale-95 cursor-pointer whitespace-nowrap flex items-center justify-center gap-2"
+            >
+              <Smartphone className="w-4 h-4" />
+              <span>Open Auth Device</span>
+            </button>
+          </div>
+        )}
 
         {/* Desktop 2-Column Cockpit Layout: Left 7 cols (Acoustic HUD), Right 5 cols (Coaching & Transcript) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 items-start">
-          {/* Left Column: Voice Integrity Acoustic HUD */}
-          <div className="lg:col-span-7 space-y-4">
-            <div data-testid="risk-indicator">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 items-stretch">
+          {/* Left Column: Voice Integrity Acoustic HUD (Equal height stretch with right column) */}
+          <div className="lg:col-span-7 flex flex-col h-full">
+            <div data-testid="risk-indicator" className="flex-1 flex flex-col h-full">
               <VoiceIntegrityPanel
                 stage1={voiceStage1}
                 stage2={voiceStage2}
@@ -482,17 +481,18 @@ const CallSession = () => {
                 onRunDemoAttack={runDemoAttack}
                 isDemoRunning={isDemoAttackRunning}
                 isCallActive={isCallActive}
+                className="flex-1"
               />
             </div>
           </div>
 
-          {/* Right Column: Coaching Alert Cards + Live Speech-to-Text Transcript Feed */}
-          <div className="lg:col-span-5 flex flex-col gap-4 h-full min-h-[500px]">
+          {/* Right Column: Coaching Alert Cards + Compact Mel Spectrogram + Live Speech-to-Text Transcript Feed */}
+          <div className="lg:col-span-5 flex flex-col gap-3.5 h-full">
             {/* 5-State Voice Integrity Alert / Coaching Card */}
             <AnimatePresence>
               {showCard && displayCardData && (
                 <CoachingCard
-                  key={displayCardData.signal}
+                  key="active-coaching-card"
                   risk={displayCardData.risk}
                   signal={displayCardData.signal}
                   coaching={displayCardData.coaching}
@@ -503,8 +503,20 @@ const CallSession = () => {
               )}
             </AnimatePresence>
 
-            {/* Transcript Feed */}
-            <div className="flex-1 flex flex-col justify-center items-center">
+            {/* Compact Mel Spectrogram (Placed directly above the mobile phone frame) */}
+            <div data-testid="cockpit-spectrogram-container" className="w-full">
+              <MelSpectrogram
+                isCallActive={isCallActive}
+                vas={voiceStage1.vas}
+                riskIndex={Math.min(98, Math.max(riskData.peakRiskScore || 0, voiceRiskState.index || 0, voiceStage1.vas || 0))}
+                riskState={voiceRiskState.state}
+                artifacts={voiceStage1.artifacts}
+                compact={true}
+              />
+            </div>
+
+            {/* Transcript Feed (Firmly top-anchored to prevent column/page vertical jumping) */}
+            <div className="flex-1 flex flex-col justify-start items-center">
               <TranscriptFeed
                 transcript={transcript}
                 isCallActive={isCallActive}
@@ -543,14 +555,11 @@ const CallSession = () => {
       {isCallActive && (
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#070b10] via-[#070b10]/95 to-transparent pt-8 z-40 flex justify-center pointer-events-none">
           <div className="inline-flex items-center gap-3 p-2 px-3 sm:px-4 rounded-full bg-[#0B1523]/95 shadow-2xl border border-amber-500/30 backdrop-blur-2xl pointer-events-auto">
-            <div className="flex items-center gap-4 px-2">
-              <div className="w-16">
-                <VolumeMonitor isRecording={isRecording && isCallActive} />
-              </div>
+            <div className="flex items-center gap-2 px-1">
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={handleEndCall}
-                aria-label="End call"
+                aria-label="Hang up"
                 data-testid="end-call-floating-button"
                 className={`px-4 py-2 rounded-full flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer font-bold text-xs ${
                   voiceRiskState.state === 'Critical'
@@ -559,7 +568,7 @@ const CallSession = () => {
                 }`}
               >
                 <PhoneOff className="w-4 h-4 text-white" />
-                <span>End Call</span>
+                <span>End</span>
               </motion.button>
             </div>
           </div>

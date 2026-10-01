@@ -157,11 +157,6 @@ const ConsentBanner = () => {
                     <p className="text-xs text-white/60 mt-0.5">Confirm consent to begin real-time monitoring</p>
                   </div>
                 </div>
-
-                <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-[11px] font-bold text-amber-400 tracking-wider">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                  SYSTEM READY
-                </div>
               </div>
 
               {/* Pre-Flight Checklist */}

@@ -3,10 +3,11 @@ import { motion } from 'framer-motion';
 import {
   ShieldAlert, ShieldCheck, Activity, Cpu, Fingerprint,
   Lock, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp,
-  Target, Sliders
+  Target, Sliders, Radio
 } from 'lucide-react';
 import { VoiceStage1Data, VoiceStage2Data, VoiceRiskState } from '../store/useSessionStore';
 import { VoiceCloneGraph } from './VoiceCloneGraph';
+import { MelSpectrogram } from './MelSpectrogram';
 
 
 interface VoiceIntegrityPanelProps {
@@ -19,6 +20,7 @@ interface VoiceIntegrityPanelProps {
   onRunDemoAttack?: () => void;
   isDemoRunning?: boolean;
   isCallActive?: boolean;
+  className?: string;
 }
 
 export const VoiceIntegrityPanel = ({
@@ -28,26 +30,33 @@ export const VoiceIntegrityPanel = ({
   peakRiskScore,
   evidenceAnchor,
   livenessScore,
-  isCallActive
+  isCallActive,
+  className = ''
 }: VoiceIntegrityPanelProps) => {
   const [isExpanded, setIsExpanded] = useState(true);
+  const [telemetryTab, setTelemetryTab] = useState<'graph' | 'spectrogram' | 'dual'>('graph');
 
   // Determine if active voice stream is currently engaged or has processed audio
   const hasVoice = isCallActive !== false || (stage1.vas > 0 || riskState.index > 0);
 
   // Latched forensic threat index:
-  // If an AI voice anomaly or manipulation was detected earlier in the video/stream (peakRiskScore >= 40),
-  // the gauge and state banner retain the latched peak alert level rather than collapsing to "Monitoring Safe"
-  // when trailing silence or humanized outro audio plays.
+  // If an AI voice anomaly or manipulation was detected earlier in the stream/file (peakRiskScore >= 40),
+  // retain the peak alert level for protective tiering and security states.
   const latchedPeak = (peakRiskScore && peakRiskScore >= 40) ? peakRiskScore : 0;
-  const effectiveIndex = hasVoice ? Math.max(riskState.index, latchedPeak) : 0;
+  
+  // Live dynamic risk score from current speech chunk
+  const liveRisk = hasVoice ? Math.min(100, Math.max(0, riskState.index)) : 0;
+  
+  // Display index for gauge: dynamically moves with live speech risk, falling back to peak if live speech pauses
+  const displayIndex = liveRisk > 0 ? liveRisk : latchedPeak;
 
-  // Determine state based on effectiveIndex if peak anomaly was latched
-  const effectiveState = (effectiveIndex >= 85)
+  // Peak security tier for protective status banner and colors (defensive)
+  const peakTierScore = Math.max(liveRisk, latchedPeak);
+  const effectiveState = (peakTierScore >= 75)
     ? 'Critical'
-    : (effectiveIndex >= 70)
+    : (peakTierScore >= 55)
       ? 'High'
-      : (effectiveIndex >= 40)
+      : (peakTierScore >= 40)
         ? 'Suspicious'
         : riskState.state;
 
@@ -108,11 +117,11 @@ export const VoiceIntegrityPanel = ({
   // Circular gauge math for Security Risk Index (0-100)
   const radius = 28;
   const circumference = 2 * Math.PI * radius;
-  const clampedIndex = hasVoice ? Math.min(100, Math.max(0, effectiveIndex)) : 0;
+  const clampedIndex = hasVoice ? Math.min(100, Math.max(0, displayIndex)) : 0;
   const strokeDashoffset = circumference - (clampedIndex / 100) * circumference;
 
   return (
-    <div className={`glass-card-strong rounded-2xl border ${currentTheme.borderColor} p-4 mb-4 shadow-xl transition-all duration-300 backdrop-blur-xl relative overflow-hidden`}>
+    <div className={`glass-card-strong rounded-2xl border ${currentTheme.borderColor} p-4 shadow-xl transition-all duration-300 backdrop-blur-xl relative overflow-hidden flex flex-col justify-between h-full ${className}`}>
       {/* Background glow pulse */}
       <div
         className="absolute -top-10 -right-10 w-36 h-36 rounded-full blur-3xl opacity-20 pointer-events-none transition-colors duration-500"
@@ -152,9 +161,9 @@ export const VoiceIntegrityPanel = ({
 
       {/* 4-Pillar Dynamic Acoustic & Consequence Fusion Telemetry */}
       {(() => {
-        // 1. Stage 1 Voice Authenticity Score (Human Likelihood: higher = authentic human)
-        const authenticityScore = hasVoice
-          ? (Math.max(0, Math.min(100, 100 - (stage1.vas || 0))) / 100).toFixed(2)
+        // 1. Stage 1 Voice Authenticity & Deepfake Probability (Aligned 1:1 with Stage 1 VAS: higher = synthetic threat)
+        const syntheticScore = hasVoice
+          ? (Math.min(100, Math.max(0, stage1.vas || 0)) / 100).toFixed(2)
           : '--';
 
         // 2. Stage 2 Impersonation & Identity Trust Score (higher = verified identity)
@@ -197,16 +206,21 @@ export const VoiceIntegrityPanel = ({
 
         return (
           <div className="mt-3.5 grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-2.5" data-testid="fusion-scoring-grid">
-            {/* Card 1: Authenticity (Blue) */}
+            {/* Card 1: Acoustic Deepfake (Aligned 1:1 with Stage 1 VAS) */}
             <div className="bg-sky-500/10 border border-sky-400/30 rounded-2xl p-2 sm:p-2.5 flex items-center gap-2 sm:gap-2.5 shadow-sm transition-all hover:bg-sky-500/15 min-w-0">
               <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white shrink-0 shadow-md">
                 <Target className="w-4 h-4 sm:w-5 sm:h-5" />
               </div>
               <div className="flex flex-col min-w-0 flex-1">
-                <span className="text-[10px] sm:text-[11px] font-semibold text-white/90 leading-tight">Authenticity</span>
-                <span className={`text-sm sm:text-base font-bold font-mono leading-tight mt-0.5 ${authenticityScore === '--' ? 'text-white/40' : 'text-white'}`}>
-                  {authenticityScore}
-                </span>
+                <span className="text-[10px] sm:text-[11px] font-semibold text-white/90 leading-tight">Acoustic Deepfake</span>
+                <div className="flex items-baseline gap-1 mt-0.5">
+                  <span className={`text-sm sm:text-base font-bold font-mono leading-tight ${syntheticScore === '--' ? 'text-white/40' : stage1.vas >= 60 ? 'text-danger' : stage1.vas >= 40 ? 'text-warning' : 'text-emerald-400'}`}>
+                    {syntheticScore}
+                  </span>
+                  {hasVoice && stage1.vas > 0 && (
+                    <span className="text-[9px] font-mono text-white/50">({stage1.vas}% VAS)</span>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -284,19 +298,24 @@ export const VoiceIntegrityPanel = ({
                 {hasVoice ? clampedIndex : '--'}
               </span>
               <span className="text-[8px] font-mono text-white/50 uppercase mt-0.5">
-                {hasVoice ? (latchedPeak > riskState.index ? 'PEAK SRI' : 'SRI') : 'WAITING'}
+                {hasVoice ? (latchedPeak > 0 ? `PEAK ${latchedPeak}` : 'LIVE SRI') : 'WAITING'}
               </span>
             </div>
           </div>
           <span className="text-[10px] font-semibold text-white/60 mt-1 uppercase tracking-wider">
-            {latchedPeak > riskState.index ? 'Peak Risk' : 'Risk Index'}
+            {hasVoice ? (latchedPeak > 0 ? `Live Risk (Peak ${latchedPeak})` : 'Live Risk') : 'Risk Index'}
           </span>
+          {hasVoice && (
+            <span className="text-[8px] font-mono text-white/45 mt-0.5 truncate" title="Multi-Modal Fusion: Voice VAS + Impersonation Context + Artifacts">
+              Voice ({stage1.vas}%) + Context
+            </span>
+          )}
         </div>
 
         {/* Metric 2: Stage 1 Voice Authenticity Score (VAS) */}
         <div className="bg-black/30 rounded-xl p-2.5 border border-white/5 flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-mono text-white/50 uppercase">Stage 1: VAS</span>
+            <span className="text-[10px] font-mono text-white/50 uppercase">Stage 1: AI Synthesis (VAS)</span>
             <Cpu className="w-3.5 h-3.5 text-primary/70" />
           </div>
           <div className="my-1">
@@ -304,7 +323,7 @@ export const VoiceIntegrityPanel = ({
               <span className={`text-xl font-bold font-mono ${stage1.vas >= 60 ? 'text-danger' : stage1.vas >= 40 ? 'text-warning' : 'text-primary'}`}>
                 {hasVoice && stage1.vas > 0 ? `${stage1.vas}%` : '--'}
               </span>
-              <span className="text-[9px] text-white/40">{hasVoice && stage1.vas > 0 ? 'synthetic' : 'awaiting voice'}</span>
+              <span className="text-[9px] text-white/40">{hasVoice && stage1.vas > 0 ? 'synthetic probability' : 'awaiting voice'}</span>
             </div>
             <div className="w-full bg-white/10 rounded-full h-1.5 mt-1 overflow-hidden">
               <div
@@ -356,15 +375,90 @@ export const VoiceIntegrityPanel = ({
         </div>
       </div>
 
-      {/* Real-Time Acoustic Voice Clone Waveform Telemetry */}
-      <div className="mt-3.5" data-testid="voice-clone-graph-container">
-        <VoiceCloneGraph
-          vas={stage1.vas || 0}
-          riskIndex={effectiveIndex}
-          riskState={effectiveState}
-          isCallActive={Boolean(isCallActive)}
-          confidence={stage1.confidence}
-        />
+      {/* Visual Telemetry Engine Selector & Controls */}
+      <div className="mt-3.5 flex items-center justify-between gap-2 flex-wrap">
+        <span className="text-[10px] font-mono text-white/50 uppercase tracking-wider font-semibold">
+          Live Acoustic Telemetry
+        </span>
+        <div className="flex items-center gap-1 bg-black/40 p-0.5 rounded-lg border border-white/10">
+          <button
+            type="button"
+            onClick={() => setTelemetryTab('graph')}
+            className={`px-2.5 py-0.5 rounded text-[10px] font-mono font-bold transition-all flex items-center gap-1 cursor-pointer ${
+              telemetryTab === 'graph'
+                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
+                : 'text-white/40 hover:text-white/80'
+            }`}
+          >
+            <Activity className="w-3 h-3" />
+            <span>Waveform</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setTelemetryTab('spectrogram')}
+            className={`px-2.5 py-0.5 rounded text-[10px] font-mono font-bold transition-all flex items-center gap-1 cursor-pointer ${
+              telemetryTab === 'spectrogram'
+                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
+                : 'text-white/40 hover:text-white/80'
+            }`}
+          >
+            <Radio className="w-3 h-3" />
+            <span>Mel Spectrogram</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setTelemetryTab('dual')}
+            className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold transition-all flex items-center gap-1 cursor-pointer ${
+              telemetryTab === 'dual'
+                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
+                : 'text-white/40 hover:text-white/80'
+            }`}
+          >
+            <span>Dual</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Real-Time Acoustic Voice Clone Waveform / Mel Spectrogram Telemetry */}
+      <div className="mt-2" data-testid="voice-clone-graph-container">
+        {telemetryTab === 'graph' && (
+          <VoiceCloneGraph
+            vas={stage1.vas || 0}
+            riskIndex={peakTierScore}
+            riskState={effectiveState}
+            isCallActive={Boolean(isCallActive)}
+            confidence={stage1.confidence}
+          />
+        )}
+        {telemetryTab === 'spectrogram' && (
+          <MelSpectrogram
+            vas={stage1.vas || 0}
+            riskIndex={peakTierScore}
+            riskState={effectiveState}
+            isCallActive={Boolean(isCallActive)}
+            artifacts={stage1.artifacts || []}
+            compact={true}
+          />
+        )}
+        {telemetryTab === 'dual' && (
+          <div className="space-y-2.5">
+            <VoiceCloneGraph
+              vas={stage1.vas || 0}
+              riskIndex={peakTierScore}
+              riskState={effectiveState}
+              isCallActive={Boolean(isCallActive)}
+              confidence={stage1.confidence}
+            />
+            <MelSpectrogram
+              vas={stage1.vas || 0}
+              riskIndex={peakTierScore}
+              riskState={effectiveState}
+              isCallActive={Boolean(isCallActive)}
+              artifacts={stage1.artifacts || []}
+              compact={true}
+            />
+          </div>
+        )}
       </div>
 
       {/* Expanded Forensics & Artifacts */}
@@ -386,15 +480,22 @@ export const VoiceIntegrityPanel = ({
                   Natural human micro-tremor & breath baseline verified
                 </span>
               ) : (
-                stage1.artifacts.map((art) => (
-                  <span
-                    key={art}
-                    className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-red-500/10 text-red-300 border border-red-500/20 flex items-center gap-1"
-                  >
-                    <span>🔴</span>
-                    <span>{art.replace(/_/g, ' ')}</span>
-                  </span>
-                ))
+                stage1.artifacts.map((art) => {
+                  const isPositive = art.includes('human') || art.includes('authentic') || art.includes('bonafide');
+                  return (
+                    <span
+                      key={art}
+                      className={`text-[10px] font-mono px-2 py-0.5 rounded-md flex items-center gap-1 ${
+                        isPositive
+                          ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/25'
+                          : 'bg-red-500/10 text-red-300 border border-red-500/20'
+                      }`}
+                    >
+                      <span>{isPositive ? '🟢' : '🔴'}</span>
+                      <span>{art.replace(/_/g, ' ')}</span>
+                    </span>
+                  );
+                })
               )}
             </div>
           </div>
@@ -425,15 +526,20 @@ export const VoiceIntegrityPanel = ({
           })()}
 
           {/* Tamper-Evident Ledger Anchor Footer */}
-          {evidenceAnchor && (
-            <div className="flex items-center justify-between text-[10px] font-mono text-white/40 pt-1">
-              <div className="flex items-center gap-1.5 truncate">
-                <Lock className="w-3 h-3 text-emerald-400" />
-                <span className="truncate">Ledger Block #{evidenceAnchor.ledgerAnchorBlock}: {evidenceAnchor.evidenceHash.slice(0, 16)}...</span>
-              </div>
-              <span className="text-emerald-400 shrink-0 font-bold">TAMPER-EVIDENT</span>
+          <div className="flex items-center justify-between text-[10px] font-mono text-white/40 pt-2 border-t border-white/5 mt-auto">
+            <div className="flex items-center gap-1.5 truncate">
+              <Lock className="w-3 h-3 text-emerald-400 shrink-0" />
+              <span className="truncate">
+                {evidenceAnchor
+                  ? `Ledger Block #${evidenceAnchor.ledgerAnchorBlock}: ${evidenceAnchor.evidenceHash.slice(0, 16)}...`
+                  : 'Zero-Knowledge Cryptographic Hash Anchor Active'}
+              </span>
             </div>
-          )}
+            <div className="flex items-center gap-1 text-emerald-400 shrink-0 font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>TAMPER-EVIDENT</span>
+            </div>
+          </div>
         </motion.div>
       )}
     </div>

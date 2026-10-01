@@ -4,6 +4,10 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  scrollbar-gutter: stable;
+}
+
 .font-brand {
   font-family: 'Outfit', 'Plus Jakarta Sans', system-ui, sans-serif;
   letter-spacing: -0.025em;
@@ -329,4 +333,52 @@ body {
   .animate-spin-slow {
     animation: spin-slow 12s linear infinite;
   }
+}
+
+/* ─── Google Translate Clean Full-Page Integration (Strict Banner Suppression) ─── */
+/* Complete suppression of Google Translate top banners, popups, tooltips, and shift */
+html,
+body {
+  top: 0px !important;
+  position: static !important;
+  margin-top: 0px !important;
+}
+
+.goog-te-banner-frame,
+.goog-te-banner-frame.skiptranslate,
+.goog-te-banner,
+iframe.goog-te-banner-frame,
+iframe.skiptranslate,
+.skiptranslate iframe,
+iframe[id*=":container"],
+div[id*=":container"],
+iframe[id*="goog"],
+div[id*="goog"],
+.goog-tooltip,
+.goog-tooltip:hover,
+#goog-gt-tt,
+#goog-gt-tt *,
+.goog-te-balloon-frame,
+[class*="VIpgJd-"],
+[id*="goog-gt-"] {
+  visibility: hidden !important;
+  position: fixed !important;
+  top: -9999px !important;
+  left: -9999px !important;
+  width: 1px !important;
+  height: 1px !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  z-index: -9999 !important;
+  clip: rect(0, 0, 0, 0) !important;
+}
+
+.goog-text-highlight {
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+font {
+  background-color: transparent !important;
+  box-shadow: none !important;
 }

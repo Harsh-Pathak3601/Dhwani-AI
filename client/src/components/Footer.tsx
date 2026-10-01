@@ -13,6 +13,7 @@ export default function Footer() {
 
   const links = [
     { name: 'Home', path: '/', icon: Home },
+    // { name: 'Download App', path: '/download', icon: Download },
     { name: 'Call Cockpit', path: '/session', icon: Radio },
     { name: 'Architecture', path: '/architecture', icon: ShieldCheck },
     { name: 'Cases & Triage', path: '/dashboard', icon: LayoutDashboard },

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Smartphone, ShieldCheck, ShieldAlert, X, Check, BellRing } from 'lucide-react';
 import { ActiveHoldData } from '../store/useSessionStore';
@@ -21,25 +21,80 @@ export const OOBVerificationModal = ({
     onResolve(decision);
   };
 
+  useEffect(() => {
+    // Play an unmistakable 2-tone Out-Of-Band push notification chime
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioCtx) {
+        const ctx = new AudioCtx();
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, now); // D5
+        osc.frequency.setValueAtTime(880, now + 0.12); // A5
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+        osc.start(now);
+        osc.stop(now + 0.45);
+      }
+    } catch {
+      // Audio autoplay policy fallback
+    }
+
+    // Trigger haptic vibration on supporting mobile devices
+    if ('vibrate' in navigator) {
+      try {
+        navigator.vibrate([200, 100, 200]);
+      } catch {}
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md"
+      style={{ background: 'radial-gradient(circle at center, rgba(239, 68, 68, 0.18) 0%, rgba(0, 0, 0, 0.88) 75%)' }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.9, y: 20 }}
-        className="w-full max-w-sm rounded-[36px] border border-white/20 shadow-2xl overflow-hidden bg-slate-950 p-6 relative flex flex-col"
+        className="w-full max-w-sm rounded-[36px] border-2 border-red-500/70 shadow-[0_0_80px_rgba(226,75,74,0.45),0_0_30px_rgba(255,109,0,0.35)] overflow-hidden bg-slate-950 p-6 relative flex flex-col ring-2 ring-red-500/30"
       >
         {/* Device Notch & Status Header */}
         <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
-          <div className="flex items-center gap-1.5 text-xs text-white/50 font-mono">
+          <div className="flex items-center gap-2 text-xs text-red-400 font-mono font-bold">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+            </span>
             <Smartphone className="w-3.5 h-3.5 text-primary" />
             <span>Authorized Security Device</span>
           </div>
           <button 
+            type="button"
             onClick={onClose}
-            className="p-1 rounded-full text-white/40 hover:text-white"
+            aria-label="Close verification modal"
+            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white flex items-center justify-center transition-all cursor-pointer shadow-sm active:scale-95"
           >
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4 stroke-[2.5]" />
           </button>
         </div>
 

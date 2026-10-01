@@ -48,8 +48,8 @@ export default function MobileDeviceFrame({
           <div className="w-8 h-[1px] bg-white/30 rounded-full" />
         </div>
 
-        {/* ── Display Bezel & Deep AMOLED OLED Screen ── */}
-        <div className={`w-full rounded-[44px] overflow-hidden bg-[#070D16] border border-white/[0.12] ring-1 ring-black flex flex-col relative shadow-[inset_0_0_30px_rgba(0,0,0,0.9)] min-h-[580px] max-h-[710px] ${screenClassName}`}>
+        {/* ── Display Bezel & Deep AMOLED OLED Screen (Stable Fixed Chassis Height) ── */}
+        <div className={`w-full rounded-[44px] overflow-hidden bg-[#070D16] border border-white/[0.12] ring-1 ring-black flex flex-col relative shadow-[inset_0_0_30px_rgba(0,0,0,0.9)] h-[620px] ${screenClassName}`}>
 
           {/* Ceramic Shield Glass Reflection (Diagonal studio sheen across upper quadrant) */}
           <div className="absolute inset-0 bg-gradient-to-br from-white/[0.045] via-transparent to-transparent pointer-events-none z-20" />

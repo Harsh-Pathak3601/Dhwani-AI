@@ -318,13 +318,13 @@ export function classifyVoiceAcousticML(features: AudioFeaturesPayload): MlClass
     // High confidence ML neural vocoder detection:
     // Incorporate physical acoustic variance (spectral flatness, glottal flutter, high-low mel ratio)
     // so every synthetic voice sample generates a distinct score reflecting its specific vocoder footprint
-    const physicalEntropy = Math.round(((spectralFlatness * 10) + (pitchJitter * 25) + ((highLowMelRatio || 1) * 3)) % 7) - 3;
-    vas = Math.min(96, Math.max(72, Math.round(60 + mlpProbability * 34 + physicalEntropy)));
+    const physicalEntropy = Math.round(((spectralFlatness * 12) + (pitchJitter * 28) + ((highLowMelRatio || 1) * 4)) % 7) - 3;
+    vas = Math.min(91, Math.max(72, Math.round(62 + mlpProbability * 26 + physicalEntropy)));
     uniqueArtifacts.push('neural_vocoder_signature_verified');
   } else if (isLowGlottalShimmer && (isMfccSpline || isVocoderShelf || isMachineFlatF0)) {
     // Multiple physical synthetic artifacts confirmed
     const physicalEntropy = Math.round(((spectralFlatness * 8) + (pitchJitter * 20)) % 5) - 2;
-    vas = Math.min(94, Math.max(70, Math.round(60 + mlpProbability * 30 + physicalEntropy)));
+    vas = Math.min(88, Math.max(68, Math.round(58 + mlpProbability * 26 + physicalEntropy)));
     uniqueArtifacts.push('neural_vocoder_signature_verified');
   } else if (distinctPhysicalAnomalies.length >= 2) {
     vas = Math.min(75, Math.max(50, Math.round(45 + mlpProbability * 30)));

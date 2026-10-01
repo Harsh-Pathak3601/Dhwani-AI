@@ -201,7 +201,7 @@ export const useSessionStore = create<SessionState>((set) => ({
 
   isDemoAttackRunning: false,
   setIsDemoAttackRunning: (running) => set({ isDemoAttackRunning: running }),
-  speechLanguage: typeof window !== 'undefined' ? (localStorage.getItem('guardcall_language') || 'hi-IN') : 'hi-IN',
+  speechLanguage: typeof window !== 'undefined' ? (localStorage.getItem('guardcall_language') || 'en-IN') : 'en-IN',
   setSpeechLanguage: (lang) => {
     if (typeof window !== 'undefined') {
       try {

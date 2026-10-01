@@ -22,9 +22,13 @@ vi.mock('../../services/api', () => ({
   reportToCommunityDB: vi.fn(),
 }));
 
-vi.mock('../../services/reportPDF', () => ({
-  generatePDFReport: vi.fn(),
-}));
+vi.mock('../../services/reportPDF', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../services/reportPDF')>();
+  return {
+    ...actual,
+    generatePDFReport: vi.fn(),
+  };
+});
 
 describe('ReportView', () => {
   const mockReport = {
@@ -56,7 +60,7 @@ describe('ReportView', () => {
     act(() => {
       vi.advanceTimersByTime(2000);
     });
-    expect(mockNavigate).toHaveBeenCalledWith('/app');
+    expect(mockNavigate).toHaveBeenCalledWith('/');
     vi.useRealTimers();
   });
 

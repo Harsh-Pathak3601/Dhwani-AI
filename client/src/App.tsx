@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion, Variants } from 'framer-motion';
 import type { ReactNode } from 'react';
@@ -8,9 +9,11 @@ import ReportView from './components/ReportView';
 import SecurityCasesDashboard from './components/SecurityCasesDashboard';
 import ArchitectureView from './components/ArchitectureView';
 import EnterpriseApiPortal from './components/EnterpriseApiPortal';
+// import DownloadView from './components/DownloadView';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import { RoleProvider } from './context/RoleContext';
+import { syncRouteTranslation, getSavedLanguageCode } from './i18n/googleTranslate';
 
 const pageVariants: Variants = {
   initial: {
@@ -39,6 +42,19 @@ const pageVariants: Variants = {
 };
 
 function PageWrapper({ children }: { children: ReactNode }) {
+  useEffect(() => {
+    const activeLang = getSavedLanguageCode();
+    // Only sync if an Indian regional language is active
+    if (activeLang && activeLang !== 'en') {
+      const t1 = setTimeout(() => syncRouteTranslation(), 150);
+      const t2 = setTimeout(() => syncRouteTranslation(), 500);
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+      };
+    }
+  }, []);
+
   return (
     <motion.div
       variants={pageVariants}
@@ -54,10 +70,20 @@ function PageWrapper({ children }: { children: ReactNode }) {
 
 function AnimatedRoutes() {
   const location = useLocation();
+  const [resetKey, setResetKey] = useState(0);
+
+  // Instantly re-mount pure native English JSX in memory without any black screen or reload
+  useEffect(() => {
+    const handleReset = () => {
+      setResetKey((prev) => prev + 1);
+    };
+    window.addEventListener('dhwani-reset-english', handleReset);
+    return () => window.removeEventListener('dhwani-reset-english', handleReset);
+  }, []);
 
   return (
     <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
+      <Routes location={location} key={`${location.pathname}-${resetKey}`}>
         <Route
           path="/"
           element={
@@ -130,6 +156,15 @@ function AnimatedRoutes() {
             </PageWrapper>
           }
         />
+        {/* Temporarily hidden until Download page is completed */}
+        {/* <Route
+          path="/download"
+          element={
+            <PageWrapper>
+              <DownloadView />
+            </PageWrapper>
+          }
+        /> */}
         <Route
           path="/integrations"
           element={

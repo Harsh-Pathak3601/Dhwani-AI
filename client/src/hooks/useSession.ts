@@ -106,7 +106,10 @@ export const useSession = () => {
     });
 
     socket.on('action:hold', (holdData: ActiveHoldData) => {
-      setActiveHold(holdData);
+      setActiveHold({
+        ...holdData,
+        status: holdData.status || 'held'
+      });
     });
 
     socket.on('liveness:challenge', (challenge: LivenessChallengeData) => {
@@ -296,6 +299,11 @@ export const useSession = () => {
       coaching: '',
       signal: 'Voice file stream initialized'
     });
+    setActiveHold(null);
+    setActiveChallenge(null);
+    setLivenessResult(null);
+    setEvidenceAnchor(null);
+    setIsDemoAttackRunning(false);
     setVoiceStage1({
       vas: 0,
       confidence: 'insufficient',
@@ -351,6 +359,11 @@ export const useSession = () => {
     setReportResult,
     setTranscript,
     setRiskData,
+    setActiveHold,
+    setActiveChallenge,
+    setLivenessResult,
+    setEvidenceAnchor,
+    setIsDemoAttackRunning,
     setVoiceStage1,
     setVoiceStage2,
     setVoiceRiskState

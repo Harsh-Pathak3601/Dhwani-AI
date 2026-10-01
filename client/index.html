@@ -11,12 +11,91 @@
     <meta property="og:description" content="Protecting callers from deepfake voice clones, digital arrest threats, and extortion in real time." />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://translate.googleapis.com">
+    <link rel="preconnect" href="https://translate.google.com">
+    <link rel="dns-prefetch" href="https://translate.googleapis.com">
+    <link rel="dns-prefetch" href="https://translate.google.com">
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Kaushan+Script&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Satisfy&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="preload" as="image" type="image/webp" href="/hero-poster.webp" />
     <link rel="preload" as="video" type="video/mp4" href="/Creating_animated_AI_video_1080p_20260927052941.mp4" />
+    <style>
+      /* Complete suppression of all Google Translate UI banners, popups, tooltips, attribution, and top bars */
+      html, body {
+        top: 0px !important;
+        position: static !important;
+        margin-top: 0px !important;
+        background-color: #0D1B2A !important;
+      }
+      .goog-te-banner-frame,
+      .goog-te-banner-frame.skiptranslate,
+      .goog-te-banner,
+      iframe.goog-te-banner-frame,
+      iframe.skiptranslate,
+      .skiptranslate iframe,
+      iframe[id*=":container"],
+      div[id*=":container"],
+      .goog-tooltip,
+      .goog-tooltip:hover,
+      #goog-gt-tt,
+      #goog-gt-tt *,
+      .goog-te-balloon-frame,
+      .VIpgJd-ZVi9C-OR9QNe-Host,
+      .VIpgJd-y6eaKe-O4E3Fb,
+      .VIpgJd-ZVi9C-x3G2wb,
+      .VIpgJd-y6eaKe-L7t0Xe,
+      .VIpgJd-ZVi9od-aZ2wEe-wOHMy,
+      .VIpgJd-ZVi9od-ORHb-OEVmcd,
+      .VIpgJd-ZVi9od-xl07Ob-OEVmcd,
+      [class*="VIpgJd-"],
+      [id*="goog-gt-"] {
+        visibility: hidden !important;
+        position: fixed !important;
+        top: -9999px !important;
+        left: -9999px !important;
+        width: 1px !important;
+        height: 1px !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        clip: rect(0, 0, 0, 0) !important;
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root" translate="no" class="notranslate"></div>
+
+    <!-- Hidden Google Translate Element Anchor (Controlled via Dhwani AI LanguageSelector) -->
+    <div id="google_translate_element" style="position:fixed; top:-9999px; left:-9999px; width:1px; height:1px; opacity:0; pointer-events:none; overflow:hidden;"></div>
+    <script type="text/javascript">
+      window.googleTranslateElementInit = function() {
+        if (window.google && window.google.translate) {
+          new window.google.translate.TranslateElement({
+            pageLanguage: 'en',
+            includedLanguages: 'en,hi,bn,ta,te,mr,gu,kn',
+            autoDisplay: false
+          }, 'google_translate_element');
+        }
+      };
+
+      // Suppress any banner iframe or popup injected dynamically
+      var bannerObserver = new MutationObserver(function() {
+        var elements = document.querySelectorAll(
+          'iframe.skiptranslate, .goog-te-banner-frame, iframe[id*=":container"], div[id*=":container"], [class*="VIpgJd-"], #goog-gt-tt, .goog-tooltip'
+        );
+        elements.forEach(function(el) {
+          el.style.setProperty('display', 'none', 'important');
+          el.style.setProperty('visibility', 'hidden', 'important');
+          el.style.setProperty('height', '0px', 'important');
+          el.style.setProperty('width', '0px', 'important');
+          el.style.setProperty('pointer-events', 'none', 'important');
+        });
+        if (document.body && document.body.style.top !== '0px') {
+          document.body.style.setProperty('top', '0px', 'important');
+        }
+      });
+      bannerObserver.observe(document.documentElement, { childList: true, subtree: true });
+    </script>
+    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
     <script>
       // Automatically unregister any stale/orphaned service workers from past builds
       if ('serviceWorker' in navigator) {

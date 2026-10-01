@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ShieldAlert, AlertOctagon, Smartphone, ArrowRight, Lock, X } from 'lucide-react';
 import { ActiveHoldData } from '../store/useSessionStore';
@@ -13,8 +14,25 @@ export const PreTransactionWarningModal = ({
   onOpenOOB,
   onDismiss
 }: PreTransactionWarningModalProps) => {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onDismiss();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onDismiss]);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-red-950/80 backdrop-blur-lg">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-red-950/80 backdrop-blur-lg"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onDismiss();
+        }
+      }}
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.9, y: 30 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -28,10 +46,12 @@ export const PreTransactionWarningModal = ({
             <span>CRITICAL TRANSACTION INTERRUPT</span>
           </div>
           <button 
+            type="button"
             onClick={onDismiss}
-            className="p-1 rounded-full hover:bg-white/10 text-white/50 hover:text-white"
+            aria-label="Dismiss warning modal"
+            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white flex items-center justify-center transition-all cursor-pointer shadow-sm active:scale-95"
           >
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4 stroke-[2.5]" />
           </button>
         </div>
 

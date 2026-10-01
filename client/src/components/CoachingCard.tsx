@@ -80,11 +80,11 @@ const CoachingCard = ({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 50, scale: 0.95 }}
+      initial={{ opacity: 0, y: 30, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 20, scale: 0.95 }}
-      transition={{ type: "spring", stiffness: 300, damping: 25 }}
-      className={`absolute bottom-[100px] left-4 right-4 z-40 rounded-2xl border backdrop-blur-xl max-h-[calc(100dvh-180px)] flex flex-col overflow-hidden ${tierStyle.cardBg} ${tierStyle.glow}`}
+      transition={{ duration: 0.25, ease: "easeOut" }}
+      className={`fixed bottom-6 right-6 z-40 w-[calc(100%-48px)] sm:w-[420px] rounded-2xl border backdrop-blur-2xl max-h-[calc(100dvh-120px)] flex flex-col overflow-hidden shadow-2xl ${tierStyle.cardBg} ${tierStyle.glow}`}
     >
       {/* Header bar */}
       <div className={`${tierStyle.headerBg} px-4 py-2 flex items-center justify-between shrink-0`}>
@@ -93,10 +93,12 @@ const CoachingCard = ({
           <span>{tierStyle.label}</span>
         </div>
         <button 
+          type="button"
           onClick={onDismiss}
-          className="p-1 rounded-full hover:bg-white/20 transition-colors"
+          aria-label="Dismiss alert"
+          className="w-7 h-7 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center transition-colors cursor-pointer"
         >
-          <X className="w-4 h-4 text-white" />
+          <X className="w-3.5 h-3.5 text-white stroke-[2.5]" />
         </button>
       </div>
 
