@@ -25,8 +25,7 @@ import {
 import MobileDeviceFrame from './MobileDeviceFrame';
 import { INDIAN_ACCENTS, applyFullPageTranslation, getSavedLanguageCode, AccentLanguage } from '../i18n/googleTranslate';
 
-// ─── CONFIGURATION: UPDATE YOUR DIRECT APK URL HERE ───
-// You can replace this with any hosted APK link (e.g. S3, GitHub Release, or custom CDN)
+
 export const APK_CONFIG = {
   downloadUrl: (import.meta.env.VITE_APK_URL as string) || '/dhwani-ai-v1.2.apk',
   version: 'v1.2.0-stable',
@@ -573,7 +572,6 @@ export default function DownloadView() {
         </div>
       </section>
 
-      {/* ─── 3. DHWANI ON-DEVICE DEFENSE PIPELINE (REPLACING GENERIC 4 BOXES) ─── */}
       <section className="relative z-10 py-16 sm:py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-400 text-xs font-bold uppercase tracking-wider mb-3">

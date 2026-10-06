@@ -43,7 +43,7 @@ const CoachingCard = ({
       textColor: 'text-danger-light',
       glow: 'shadow-[0_0_40px_rgba(226,75,74,0.35)]',
       icon: <ShieldAlert className="w-5 h-5 text-white" />,
-      label: vas ? `🔴 SYNTHETIC VOICE LIKELY (${vas}% VAS)` : 'CRITICAL THREAT',
+      label: vas ? `SYNTHETIC VOICE LIKELY (${vas}% VAS)` : 'CRITICAL THREAT',
       defaultAction: coaching || 'Do NOT authorize any financial or security action. Request in-person or secondary device verification.'
     };
   } else if (voiceState === 'High' || risk >= 65) {
@@ -53,7 +53,7 @@ const CoachingCard = ({
       textColor: 'text-orange-300',
       glow: 'shadow-[0_0_35px_rgba(249,115,22,0.25)]',
       icon: <ShieldAlert className="w-5 h-5 text-white" />,
-      label: '🟠 VOICE ANOMALY DETECTED',
+      label: 'VOICE ANOMALY DETECTED',
       defaultAction: coaching || 'Proceed with high caution. Call back on official enrolled number before taking any action.'
     };
   } else if (voiceState === 'Suspicious' || risk >= 40) {
@@ -63,7 +63,7 @@ const CoachingCard = ({
       textColor: 'text-amber-200',
       glow: 'shadow-[0_0_30px_rgba(245,158,11,0.2)]',
       icon: <AlertTriangle className="w-5 h-5 text-white" />,
-      label: '🟡 VOICE IRREGULARITY',
+      label: 'VOICE IRREGULARITY',
       defaultAction: coaching || 'Something sounds acoustically irregular. Exercise vigilance.'
     };
   } else if (voiceState === 'Insufficient Evidence') {
@@ -73,7 +73,7 @@ const CoachingCard = ({
       textColor: 'text-slate-300',
       glow: 'shadow-[0_0_20px_rgba(148,163,184,0.15)]',
       icon: <HelpCircle className="w-5 h-5 text-white" />,
-      label: '⚪ INSUFFICIENT AUDIO',
+      label: 'INSUFFICIENT AUDIO',
       defaultAction: 'Not enough acoustic signal to assess synthesis. Use independent verification for sensitive transactions.'
     };
   }

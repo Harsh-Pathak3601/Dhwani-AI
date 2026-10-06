@@ -6,10 +6,39 @@ const API_URL = import.meta.env.VITE_API_URL
   ? import.meta.env.VITE_API_URL.replace(/\/api$/, '') 
   : 'http://localhost:3001';
 
+// In-memory token pre-warming and caching to eliminate initial 2-3s connection delays
+let cachedDeepgramToken: string | null = null;
+let tokenExpiresAt: number = 0;
+
+async function getDeepgramToken(): Promise<string | null> {
+  if (cachedDeepgramToken && Date.now() < tokenExpiresAt - 60000) {
+    return cachedDeepgramToken;
+  }
+  try {
+    const res = await fetch(`${API_URL}/api/deepgram/token`, { signal: AbortSignal.timeout(6000) });
+    if (res.ok) {
+      const { token } = await res.json();
+      if (token) {
+        cachedDeepgramToken = token;
+        tokenExpiresAt = Date.now() + 50 * 60 * 1000;
+        return token;
+      }
+    }
+  } catch (err) {
+    console.warn('Deepgram token pre-fetch notice:', err);
+  }
+  return cachedDeepgramToken;
+}
+
+// Pre-warm Deepgram token on client load
+if (typeof window !== 'undefined') {
+  getDeepgramToken().catch(() => {});
+}
+
 export const useAudioCapture = (
   socket: Socket | null, 
   setTranscript: (transcript: string) => void,
-  language: string = 'hi-IN'
+  language: string = 'en-IN'
 ) => {
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [hasPermission, setHasPermission] = useState<boolean>(false);
@@ -26,46 +55,73 @@ export const useAudioCapture = (
   const socketRef = useRef<Socket | null>(socket);
   socketRef.current = socket;
 
-  // Web Speech API Fallback Definition (Resilient, auto-restarting on pauses or ambient silence)
+  const emitThrottleRef = useRef<NodeJS.Timeout | null>(null);
+  const lastEmittedRef = useRef<string>('');
+  const fileSyncTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Throttled emitter to push streaming transcripts to the backend risk engine
+  const emitLiveTranscript = useCallback((text: string) => {
+    if (!text || text.trim() === lastEmittedRef.current.trim()) return;
+    if (emitThrottleRef.current) clearTimeout(emitThrottleRef.current);
+    emitThrottleRef.current = setTimeout(() => {
+      lastEmittedRef.current = text;
+      if (socketRef.current) {
+        socketRef.current.emit('transcript:update', text);
+      }
+    }, 200);
+  }, []);
+
+  // Map user-selected dialect accurately to Deepgram Nova-2 models
+  const getDgLang = useCallback((l: string) => {
+    if (!l) return 'en-IN';
+    const clean = l.toLowerCase().trim();
+    if (clean.startsWith('en')) {
+      return clean === 'en-us' ? 'en-US' : 'en-IN';
+    }
+    if (clean.startsWith('hi')) return 'hi';
+    if (clean.startsWith('ta')) return 'ta';
+    if (clean.startsWith('te')) return 'te';
+    if (clean.startsWith('bn')) return 'bn';
+    if (clean.startsWith('mr')) return 'mr';
+    if (clean.startsWith('gu')) return 'gu';
+    return 'en-IN';
+  }, []);
+
+  // Instant Web Speech API preview (0ms latency local fallback in browser while WebSocket connects)
   const startWebSpeechFallback = useCallback(() => {
     if (activeRecognitionRef.current) return;
     const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRec) {
-      console.warn('SpeechRecognition API not supported in this browser.');
-      return;
-    }
+    if (!SpeechRec) return;
 
     try {
       const recognition = new SpeechRec();
       recognition.continuous = true;
       recognition.interimResults = true;
-      recognition.lang = language || 'hi-IN';
+      recognition.lang = language || 'en-IN';
 
       recognition.onresult = (event: any) => {
+        // If Deepgram is already streaming, don't overwrite with Web Speech
+        if (dgConnectedRef.current) return;
+
         let interim = '';
         for (let i = event.resultIndex; i < event.results.length; ++i) {
           const res = event.results[i];
           if (res.isFinal) {
-            transcriptRef.current += res[0].transcript + ' ';
-            const words = transcriptRef.current.split(' ');
-            if (words.length > 400) {
-              transcriptRef.current = words.slice(words.length - 400).join(' ');
-            }
-            if (socketRef.current) {
-              socketRef.current.emit('transcript:update', transcriptRef.current);
-            }
+            transcriptRef.current = (transcriptRef.current + ' ' + res[0].transcript).trim() + ' ';
             setTranscript(transcriptRef.current);
+            emitLiveTranscript(transcriptRef.current);
           } else {
             interim += res[0].transcript;
           }
         }
         if (interim) {
-          setTranscript(transcriptRef.current + interim);
+          const preview = (transcriptRef.current + ' ' + interim).trim();
+          setTranscript(preview);
+          emitLiveTranscript(preview);
         }
       };
 
       recognition.onerror = (e: any) => {
-        console.warn('Web Speech status:', e.error);
         if (e.error === 'not-allowed') {
           setPermissionError('Microphone permission blocked by browser.');
         }
@@ -84,11 +140,11 @@ export const useAudioCapture = (
       recognition.start();
       activeRecognitionRef.current = recognition;
     } catch (e) {
-      console.warn('Could not start Web Speech Recognition:', e);
+      console.warn('Web Speech recognition start notice:', e);
     }
-  }, [language, setTranscript, setPermissionError]);
+  }, [emitLiveTranscript, language, setPermissionError, setTranscript]);
 
-  // Deepgram WebSocket Stream Connector (supports both Mic stream and AudioContext MediaStreamDestination)
+  // Deepgram WebSocket Stream Connector with ultra-low latency chunking & endpointing
   const initDeepgramStream = useCallback(async (stream: MediaStream, allowWebSpeechFallback: boolean = true) => {
     let mediaRecorder: MediaRecorder | null = null;
     try {
@@ -103,124 +159,106 @@ export const useAudioCapture = (
     }
 
     dgConnectedRef.current = false;
-    const dgTimeout = setTimeout(() => {
-      if (!dgConnectedRef.current && isRecordingRef.current && allowWebSpeechFallback) {
-        console.info('Deepgram connection taking longer, activating Web Speech Recognition as temporary fallback.');
-        startWebSpeechFallback();
-      }
-    }, 5000);
+
+    // Start Web Speech preview immediately on live recording to eliminate initial perception delay
+    if (allowWebSpeechFallback && !activeRecognitionRef.current) {
+      startWebSpeechFallback();
+    }
 
     try {
-      const tokenRes = await fetch(`${API_URL}/api/deepgram/token`, { signal: AbortSignal.timeout(12000) });
-      if (tokenRes.ok) {
-        const { token } = await tokenRes.json();
-        if (token && isRecordingRef.current) {
-          const getDgLang = (l: string) => {
-            if (l.startsWith('hi')) return 'hi';
-            if (l === 'en-IN') return 'en-IN';
-            if (l === 'en-US') return 'en-US';
-            return 'hi';
-          };
-          const targetLang = getDgLang(language || 'hi-IN');
+      // 0ms cached token retrieval
+      const token = await getDeepgramToken();
+      if (token && isRecordingRef.current) {
+        const targetLang = getDgLang(language);
 
-          const dgWs = new WebSocket(
-            `wss://api.deepgram.com/v1/listen?model=nova-2&language=${targetLang}&smart_format=true&interim_results=true&endpointing=300`,
-            ['token', token]
-          );
-          dgSocketRef.current = dgWs;
+        // endpointing=150: finalize phrases in 150ms of natural breath/pause instead of 300+ms delay
+        // interim_results=true: stream live words as they are pronounced
+        const dgWs = new WebSocket(
+          `wss://api.deepgram.com/v1/listen?model=nova-2&language=${targetLang}&smart_format=true&interim_results=true&endpointing=150&vad_events=true`,
+          ['token', token]
+        );
+        dgSocketRef.current = dgWs;
 
-          dgWs.onopen = () => {
-            clearTimeout(dgTimeout);
-            dgConnectedRef.current = true;
-            console.info(`Deepgram Nova-2 connected successfully (Language: ${targetLang}).`);
+        dgWs.onopen = () => {
+          dgConnectedRef.current = true;
+          console.info(`Deepgram Nova-2 connected in real-time (Language: ${targetLang}).`);
 
-            if (activeRecognitionRef.current) {
-              try {
-                activeRecognitionRef.current.stop();
-              } catch {}
-              activeRecognitionRef.current = null;
-            }
-
-            if (mediaRecorder && mediaRecorder.state === 'inactive') {
-              mediaRecorder.ondataavailable = (event) => {
-                if (event.data.size > 0) {
-                  if (dgWs.readyState === WebSocket.OPEN) {
-                    dgWs.send(event.data);
-                  }
-                }
-              };
-              mediaRecorder.start(250);
-            }
-          };
-
-          dgWs.onmessage = (event) => {
+          // Stop browser Web Speech once Deepgram is online
+          if (activeRecognitionRef.current) {
             try {
-              const received = JSON.parse(event.data);
-              if (received.type === 'Results' && received.channel?.alternatives?.[0]) {
-                const text = received.channel.alternatives[0].transcript;
-                if (text && received.is_final) {
-                  transcriptRef.current += text + ' ';
-                  const words = transcriptRef.current.split(' ');
-                  if (words.length > 400) {
-                    transcriptRef.current = words.slice(words.length - 400).join(' ');
-                  }
-                  if (socketRef.current) {
-                    socketRef.current.emit('transcript:update', transcriptRef.current);
-                  }
+              activeRecognitionRef.current.stop();
+            } catch {}
+            activeRecognitionRef.current = null;
+          }
+
+          if (mediaRecorder && mediaRecorder.state === 'inactive') {
+            mediaRecorder.ondataavailable = (event) => {
+              if (event.data.size > 0 && dgWs.readyState === WebSocket.OPEN) {
+                dgWs.send(event.data);
+              }
+            };
+            // 100ms chunking for 2.5x lower delivery latency than default 250ms
+            mediaRecorder.start(100);
+          }
+        };
+
+        dgWs.onmessage = (event) => {
+          try {
+            const received = JSON.parse(event.data);
+            if (received.type === 'Results' && received.channel?.alternatives?.[0]) {
+              const text = received.channel.alternatives[0].transcript;
+              if (text) {
+                if (received.is_final) {
+                  transcriptRef.current = (transcriptRef.current + ' ' + text).trim() + ' ';
                   setTranscript(transcriptRef.current);
-                } else if (text) {
-                  setTranscript(transcriptRef.current + text);
+                  emitLiveTranscript(transcriptRef.current);
+                } else {
+                  // Live word preview rendered without waiting for sentence completion
+                  const currentPreview = (transcriptRef.current + ' ' + text).trim();
+                  setTranscript(currentPreview);
+                  emitLiveTranscript(currentPreview);
                 }
               }
-            } catch {}
-          };
+            }
+          } catch {}
+        };
 
-          dgWs.onerror = () => {
-            clearTimeout(dgTimeout);
+        dgWs.onerror = () => {
+          dgConnectedRef.current = false;
+          if (isRecordingRef.current && allowWebSpeechFallback) {
+            startWebSpeechFallback();
+          }
+        };
+
+        dgWs.onclose = () => {
+          if (dgConnectedRef.current && isRecordingRef.current && allowWebSpeechFallback) {
             dgConnectedRef.current = false;
-            if (isRecordingRef.current && allowWebSpeechFallback) {
-              startWebSpeechFallback();
-            }
-          };
-
-          dgWs.onclose = () => {
-            if (dgConnectedRef.current && isRecordingRef.current && allowWebSpeechFallback) {
-              dgConnectedRef.current = false;
-              startWebSpeechFallback();
-            }
-          };
-        } else {
-          clearTimeout(dgTimeout);
-          if (allowWebSpeechFallback) startWebSpeechFallback();
-        }
-      } else {
-        clearTimeout(dgTimeout);
-        if (allowWebSpeechFallback) startWebSpeechFallback();
+            startWebSpeechFallback();
+          }
+        };
       }
     } catch (dgErr) {
-      clearTimeout(dgTimeout);
-      console.warn('Deepgram token unreachable:', dgErr);
+      console.warn('Deepgram connection error:', dgErr);
       if (isRecordingRef.current && allowWebSpeechFallback) {
         startWebSpeechFallback();
       }
     }
-  }, [language, setTranscript, startWebSpeechFallback]);
+  }, [emitLiveTranscript, getDgLang, language, setTranscript, startWebSpeechFallback]);
 
   const startRecording = useCallback(async () => {
     try {
-      // 1. Microphone Capture: Parallel Audio Tap (High-fidelity capture for direct speech + external speakers)
       let stream: MediaStream;
       try {
         stream = await navigator.mediaDevices.getUserMedia({ 
           audio: {
-            echoCancellation: false,  // Do NOT cancel external speaker audio
-            noiseSuppression: false,  // Do NOT suppress acoustic harmonics from other devices
-            autoGainControl: true,    // Dynamically boost faint audio from nearby external devices
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: true,
             channelCount: 1
           } 
         });
       } catch (constraintErr) {
-        console.warn('Advanced audio constraints not supported by device, falling back to standard audio:', constraintErr);
+        console.warn('Advanced audio constraints not supported, fallback to standard audio:', constraintErr);
         stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       }
       
@@ -228,10 +266,11 @@ export const useAudioCapture = (
       setHasPermission(true);
       setPermissionError(null);
       transcriptRef.current = '';
+      setTranscript('');
       isRecordingRef.current = true;
       setIsRecording(true);
 
-      // 2. Initialize Browser DSP Feature Extractor with 16kHz PCM tap for Modulate Velma Streaming
+      // Initialize Browser DSP Feature Extractor with 16kHz PCM tap for real-time acoustic streaming
       featureExtractorRef.current = new AudioFeatureExtractor();
       featureExtractorRef.current.setPcmCallback((pcmBuffer: ArrayBuffer) => {
         if (socketRef.current && isRecordingRef.current) {
@@ -245,7 +284,7 @@ export const useAudioCapture = (
         }
       });
 
-      // 3. Connect MediaRecorder & Deepgram WebSocket
+      // Connect MediaRecorder & Deepgram WebSocket
       await initDeepgramStream(stream, true);
 
     } catch (err: unknown) {
@@ -256,12 +295,22 @@ export const useAudioCapture = (
       isRecordingRef.current = false;
       setIsRecording(false);
     }
-  }, [initDeepgramStream]);
+  }, [initDeepgramStream, setTranscript]);
 
   const stopRecording = useCallback(() => {
     isRecordingRef.current = false;
     dgConnectedRef.current = false;
     setIsRecording(false);
+
+    if (fileSyncTimerRef.current) {
+      clearInterval(fileSyncTimerRef.current);
+      fileSyncTimerRef.current = null;
+    }
+
+    if (emitThrottleRef.current) {
+      clearTimeout(emitThrottleRef.current);
+      emitThrottleRef.current = null;
+    }
 
     if (featureExtractorRef.current) {
       featureExtractorRef.current.stop();
@@ -304,13 +353,23 @@ export const useAudioCapture = (
     }
   }, [socket]);
 
+  /**
+   * Starts file analysis with frame-perfect timestamp synchronization between
+   * audio playback and transcription text display.
+   */
   const startFileAnalysis = useCallback(async (file: File, onEnded?: () => void) => {
     try {
       setHasPermission(true);
       setPermissionError(null);
       transcriptRef.current = '';
+      setTranscript('');
       isRecordingRef.current = true;
       setIsRecording(true);
+
+      if (fileSyncTimerRef.current) {
+        clearInterval(fileSyncTimerRef.current);
+        fileSyncTimerRef.current = null;
+      }
 
       if (featureExtractorRef.current) {
         featureExtractorRef.current.stop();
@@ -322,23 +381,22 @@ export const useAudioCapture = (
         }
       });
 
-      await featureExtractorRef.current.startFile(
-        file, 
-        (features: AudioFeatures) => {
-          const activeSocket = socketRef.current;
-          if (activeSocket) {
-            activeSocket.emit('audio:features', features);
-          }
-        },
-        onEnded
-      );
+      // 1. Kick off high-accuracy pre-recorded word-level transcription in parallel
+      const transcribePromise = fetch(`${API_URL}/api/deepgram/transcribe-file?language=${encodeURIComponent(getDgLang(language))}`, {
+        method: 'POST',
+        headers: { 'Content-Type': file.type || 'audio/wav' },
+        body: file
+      }).then(res => res.json()).catch(err => {
+        console.warn('File transcription pre-fetch notice:', err);
+        return null;
+      });
 
-      // In parallel, inspect audio file via Modulate Velma-2 Batch forensic API
+      // In parallel, inspect audio file via deep forensic acoustic batch API
       const reader = new FileReader();
       reader.onload = () => {
         const base64 = (reader.result as string)?.split(',')[1];
         if (base64) {
-          fetch(`${API_URL}/api/modulate/analyze-batch`, {
+          fetch(`${API_URL}/api/forensic/analyze-batch`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -350,64 +408,88 @@ export const useAudioCapture = (
             .then(res => res.json())
             .then(data => {
               if (data?.result && socketRef.current) {
-                console.info('[Modulate Velma-2 Batch] Analysis result:', data.result);
                 socketRef.current.emit('modulate:batch_result', data.result);
               }
             })
-            .catch(err => console.warn('[Modulate] Batch analysis background notice:', err));
+            .catch(() => {});
         }
       };
       reader.readAsDataURL(file);
 
-      // 1. Tapped live MediaStream from file playback -> Deepgram WebSocket streaming
-      const fileStream = featureExtractorRef.current.getMediaStream();
-      if (fileStream) {
-        streamRef.current = fileStream;
-        initDeepgramStream(fileStream, false);
-      }
+      // Brief wait (~800ms) for pre-transcription to get exact word-level start timestamps
+      const fastResult = await Promise.race([
+        transcribePromise,
+        new Promise(resolve => setTimeout(resolve, 850))
+      ]);
 
-      // 2. High-accuracy pre-recorded transcription fallback:
-      // Calls /api/deepgram/transcribe-file to guarantee spoken words stream at steady tempo
-      fetch(`${API_URL}/api/deepgram/transcribe-file`, {
-        method: 'POST',
-        headers: { 'Content-Type': file.type || 'audio/wav' },
-        body: file
-      }).then(res => res.json()).then(data => {
-        if (data.transcript && isRecordingRef.current) {
-          // If live WebSocket hasn't already populated transcript:
-          if (!transcriptRef.current.trim()) {
-            if (data.words && data.words.length > 0) {
-              let wIdx = 0;
-              const interval = setInterval(() => {
-                if (!isRecordingRef.current || wIdx >= data.words.length) {
-                  clearInterval(interval);
-                  return;
-                }
-                const chunk = data.words.slice(wIdx, wIdx + 3).map((w: any) => w.word).join(' ');
-                wIdx += 3;
-                transcriptRef.current += (transcriptRef.current ? ' ' : '') + chunk;
-                if (socketRef.current) {
-                  socketRef.current.emit('transcript:update', transcriptRef.current);
-                }
-                setTranscript(transcriptRef.current);
-              }, 400);
-            } else {
-              transcriptRef.current = data.transcript;
-              if (socketRef.current) {
-                socketRef.current.emit('transcript:update', transcriptRef.current);
-              }
-              setTranscript(transcriptRef.current);
-            }
-          }
+      let playbackStartTime = Date.now();
+
+      const syncWordsWithAudio = (words: Array<{ word: string; start: number; end: number; punctuated_word?: string }>) => {
+        if (!words || words.length === 0) return;
+        if (fileSyncTimerRef.current) {
+          clearInterval(fileSyncTimerRef.current);
         }
-      }).catch(err => {
-        console.warn('Pre-recorded file transcription notice:', err);
-      });
+        let wordPointer = 0;
+        fileSyncTimerRef.current = setInterval(() => {
+          if (!isRecordingRef.current) {
+            clearInterval(fileSyncTimerRef.current!);
+            return;
+          }
+          const currentAudioSec = (Date.now() - playbackStartTime) / 1000;
+          while (wordPointer < words.length && words[wordPointer].start <= currentAudioSec) {
+            wordPointer++;
+          }
+          const wordsToShow = words.slice(0, wordPointer).map(w => w.punctuated_word || w.word).join(' ');
+          if (wordsToShow !== transcriptRef.current) {
+            transcriptRef.current = wordsToShow;
+            setTranscript(wordsToShow);
+            emitLiveTranscript(wordsToShow);
+          }
+          if (wordPointer >= words.length) {
+            clearInterval(fileSyncTimerRef.current!);
+            fileSyncTimerRef.current = null;
+          }
+        }, 40);
+      };
+
+      // Start the audio playback through speaker and acoustic analyser
+      playbackStartTime = Date.now();
+      await featureExtractorRef.current.startFile(
+        file,
+        (features: AudioFeatures) => {
+          if (socketRef.current) {
+            socketRef.current.emit('audio:features', features);
+          }
+        },
+        () => {
+          if (fileSyncTimerRef.current) {
+            clearInterval(fileSyncTimerRef.current);
+            fileSyncTimerRef.current = null;
+          }
+          if (onEnded) onEnded();
+        }
+      );
+
+      if (fastResult?.words && fastResult.words.length > 0) {
+        // Frame-perfect lockstep alignment from the exact millisecond audio starts!
+        syncWordsWithAudio(fastResult.words);
+      } else {
+        // If transcribePromise took slightly longer, sync immediately upon arrival
+        transcribePromise.then(delayedData => {
+          if (delayedData?.words && delayedData.words.length > 0 && isRecordingRef.current) {
+            syncWordsWithAudio(delayedData.words);
+          } else if (delayedData?.transcript && isRecordingRef.current) {
+            transcriptRef.current = delayedData.transcript;
+            setTranscript(delayedData.transcript);
+            emitLiveTranscript(delayedData.transcript);
+          }
+        });
+      }
     } catch (err: any) {
       console.error('Failed to analyze file:', err);
       setPermissionError(err.message || 'Failed to decode audio file');
     }
-  }, [initDeepgramStream, setTranscript]);
+  }, [emitLiveTranscript, getDgLang, language, setTranscript]);
 
   return { 
     startRecording, 

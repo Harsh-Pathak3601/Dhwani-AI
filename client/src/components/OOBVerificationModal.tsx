@@ -1,7 +1,46 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Smartphone, ShieldCheck, ShieldAlert, X, Check, BellRing } from 'lucide-react';
-import { ActiveHoldData } from '../store/useSessionStore';
+import { Smartphone, ShieldCheck, ShieldAlert, X, Check, BellRing, AlertTriangle } from 'lucide-react';
+import { ActiveHoldData, useSessionStore } from '../store/useSessionStore';
+
+export function extractSpokenAmount(text: string): string | null {
+  if (!text || typeof text !== 'string') return null;
+
+  // 1. Symbol-prefixed amounts: ₹50,00,000, ₹50 lakh, Rs. 50,000, $10,000, etc.
+  const symbolMatch = text.match(/(?:₹|Rs\.?|INR|\$|USD|EUR|€|GBP|£)\s*[\d,]+(?:\.\d+)?(?:\s*(?:lakh|crore|k|m|million|thousand|crores|lakhs))?/i);
+  if (symbolMatch) {
+    let result = symbolMatch[0].trim();
+    if (result.startsWith('Rs') || result.startsWith('INR')) {
+      result = result.replace(/^(?:Rs\.?|INR)\s*/i, '₹');
+    }
+    return result;
+  }
+
+  // 2. Number + denomination unit: 50 lakh, 10 crore, 25 thousand, 50000 rupees
+  const unitMatch = text.match(/\b(?:\d+(?:,\d+)*(?:\.\d+)?)\s*(?:lakh|crore|thousand|million|billion|rupees|dollars|inr|usd|bucks)\b/i);
+  if (unitMatch) {
+    const val = unitMatch[0].trim();
+    if (/lakh|crore|rupee|inr/i.test(val)) {
+      return val.startsWith('₹') ? val : `₹${val}`;
+    }
+    return val;
+  }
+
+  // 3. Spoken number words with denomination: e.g. "fifty lakh", "twenty thousand", "two crore"
+  const wordMatch = text.match(/\b(?:fifty|twenty|thirty|forty|sixty|seventy|eighty|ninety|ten|five|two|one|three|four)\s+(?:lakh|crore|thousand|million|billion|rupees|dollars)\b/i);
+  if (wordMatch) {
+    const val = wordMatch[0].trim();
+    return val.toLowerCase().includes('dollar') ? `$${val}` : `₹${val}`;
+  }
+
+  // 4. Large formatted numbers with commas (e.g. 50,00,000 or 50,000)
+  const commaMatch = text.match(/\b\d{1,3}(?:,\d{2,3})+(?:\.\d+)?\b/);
+  if (commaMatch) {
+    return `₹${commaMatch[0].trim()}`;
+  }
+
+  return null;
+}
 
 interface OOBVerificationModalProps {
   hold: ActiveHoldData;
@@ -15,6 +54,39 @@ export const OOBVerificationModal = ({
   onClose
 }: OOBVerificationModalProps) => {
   const [resolutionStatus, setResolutionStatus] = useState<'pending' | 'denied' | 'approved'>('pending');
+
+  const transcript = useSessionStore((state) => state.transcript);
+  const callerNumber = useSessionStore((state) => state.callerNumber);
+  const isDemoAttackRunning = useSessionStore((state) => state.isDemoAttackRunning);
+
+  // Extract or verify spoken amount from transcript, hold.reason, or hold.heldAmount
+  const heardAmount = (() => {
+    if (isDemoAttackRunning) return '₹50,00,000';
+    const fromTranscript = extractSpokenAmount(transcript);
+    if (fromTranscript) return fromTranscript;
+    const fromReason = extractSpokenAmount(hold.reason || '');
+    if (fromReason) return fromReason;
+    if (hold.heldAmount && hold.heldAmount !== 'HIGH TRANSACTION ALERT' && hold.heldAmount !== '₹50,00,000') {
+      return hold.heldAmount;
+    }
+    return null;
+  })();
+
+  const hasHeardAmount = Boolean(heardAmount);
+  const displayAmount = heardAmount || 'HIGH TRANSACTION ALERT';
+
+  // Determine actual file name or caller name (avoid dummy Rajiv Verma)
+  const callerOrFileName = (() => {
+    if (isDemoAttackRunning) return 'Rajiv Verma (CFO)';
+    if (hold.fileName) return hold.fileName;
+    if (hold.callerName) return hold.callerName;
+    if (callerNumber && callerNumber !== 'Unknown Caller') return callerNumber;
+    return '';
+  })();
+
+  const isAudioFile = Boolean(
+    callerOrFileName && /\.(wav|mp3|m4a|ogg|aac|flac|webm|opus)$/i.test(callerOrFileName)
+  );
 
   const handleAction = (decision: 'approved' | 'denied') => {
     setResolutionStatus(decision);
@@ -126,14 +198,27 @@ export const OOBVerificationModal = ({
               {/* Transaction Details */}
               <div className="bg-black/50 border border-white/10 rounded-2xl p-4 text-center">
                 <span className="text-[10px] font-mono text-white/40 uppercase">Pending Authorization</span>
-                <div className="text-3xl font-black text-white font-mono my-1">
-                  {hold.heldAmount || '₹50,00,000'}
+                <div className={`font-black font-mono my-1 tracking-tight ${hasHeardAmount ? 'text-3xl text-white' : 'text-xl text-amber-400 py-1'}`}>
+                  {displayAmount}
                 </div>
-                <div className="text-xs text-danger font-semibold bg-danger/10 border border-danger/20 rounded-lg py-1 px-2 mt-2">
-                  ⚠️ Triggered while Voice Risk is Elevated
+                <div className="text-xs text-danger font-semibold bg-danger/10 border border-danger/20 rounded-lg py-1 px-2.5 mt-2 flex items-center justify-center gap-1.5">
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                  <span>Triggered while Voice Risk is Elevated</span>
                 </div>
                 <p className="text-xs text-white/70 mt-3 text-left">
-                  A caller claiming to be <strong>Rajiv Verma (CFO)</strong> requested immediate release of funds over an in-progress phone call.
+                  {isAudioFile ? (
+                    <>
+                      Audio file <strong>{callerOrFileName}</strong> requested immediate release of funds over an in-progress session.
+                    </>
+                  ) : callerOrFileName ? (
+                    <>
+                      A caller claiming to be <strong>{callerOrFileName}</strong> requested immediate release of funds over an in-progress phone call.
+                    </>
+                  ) : (
+                    <>
+                      An incoming voice call requested immediate release of emergency funds over an in-progress phone call.
+                    </>
+                  )}
                 </p>
               </div>
 
@@ -171,7 +256,9 @@ export const OOBVerificationModal = ({
               </div>
               <h3 className="text-xl font-black text-white">IMPERSONATION ATTACK PREVENTED!</h3>
               <p className="text-xs text-emerald-300 mt-2 leading-relaxed px-2">
-                The ₹50,00,000 transaction has been permanently blocked. The attacker on the voice call cannot authorize fund movement without independent device clearance.
+                {hasHeardAmount
+                  ? `The ${displayAmount} transaction has been permanently blocked. The attacker on the voice call cannot authorize fund movement without independent device clearance.`
+                  : 'The high-risk emergency transaction has been permanently blocked. The attacker on the voice call cannot authorize fund movement without independent device clearance.'}
               </p>
               <div className="bg-white/5 rounded-xl p-3 border border-white/10 text-[10px] font-mono text-white/50 my-4 text-left w-full">
                 <div>TXN REF: {hold.transactionRef}</div>

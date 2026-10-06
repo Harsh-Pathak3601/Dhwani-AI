@@ -15,11 +15,11 @@ type StatusFilter = '' | 'Needs Review' | 'Verified' | 'Suspected';
 const statusBadge = (status: string) => {
   switch (status) {
     case 'Verified':
-      return { icon: ShieldCheck, text: 'text-primary', bg: 'bg-primary/20', border: 'border-primary/40', label: '🟢 Verified' };
+      return { icon: ShieldCheck, text: 'text-primary', bg: 'bg-primary/20', border: 'border-primary/40', label: 'Verified' };
     case 'Suspected':
-      return { icon: ShieldAlert, text: 'text-danger', bg: 'bg-danger/20', border: 'border-danger/40', label: '🔴 Suspected' };
+      return { icon: ShieldAlert, text: 'text-danger', bg: 'bg-danger/20', border: 'border-danger/40', label: 'Suspected' };
     default:
-      return { icon: Shield, text: 'text-warning', bg: 'bg-warning/20', border: 'border-warning/40', label: '🟡 Needs Review' };
+      return { icon: Shield, text: 'text-warning', bg: 'bg-warning/20', border: 'border-warning/40', label: 'Needs Review' };
   }
 };
 
@@ -332,9 +332,33 @@ const SecurityCasesDashboard = () => {
 
         {/* Cases List */}
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 w-full">
-            <Loader2 className="w-8 h-8 text-primary animate-spin mb-4" />
-            <p className="text-white/40 text-sm">Loading cases...</p>
+          <div className="flex flex-col items-center justify-center py-20 w-full" data-testid="cases-loader">
+            {/* Acoustic Audio Waveform Equalizer Spinner */}
+            <div className="flex items-center justify-center gap-1.5 h-12 px-4 py-2 rounded-2xl bg-white/[0.02] border border-white/5 mb-3 shadow-[0_0_25px_rgba(0,229,255,0.08)]">
+              {[
+                { delay: '0ms', duration: '800ms', height: 'h-8' },
+                { delay: '150ms', duration: '950ms', height: 'h-10' },
+                { delay: '300ms', duration: '700ms', height: 'h-12' },
+                { delay: '200ms', duration: '1100ms', height: 'h-7' },
+                { delay: '400ms', duration: '850ms', height: 'h-9' },
+              ].map((bar, i) => (
+                <div
+                  key={i}
+                  className={`w-1 rounded-full bg-gradient-to-t from-primary/30 via-cyan-400 to-primary animate-pulse shadow-[0_0_8px_rgba(0,229,255,0.7)] ${bar.height}`}
+                  style={{
+                    animationDelay: bar.delay,
+                    animationDuration: bar.duration,
+                  }}
+                />
+              ))}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-ping" />
+              <p className="text-white/60 text-xs sm:text-sm font-mono tracking-wider uppercase">
+                Loading cases...
+              </p>
+            </div>
           </div>
         ) : data.reports.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 glass-card w-full">

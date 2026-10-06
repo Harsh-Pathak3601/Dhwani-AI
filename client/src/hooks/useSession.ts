@@ -19,6 +19,7 @@ export const useSession = () => {
   const { socket, isConnected } = useSocket();
   const {
     callerNumber,
+    setCallerNumber,
     sessionActive,
     setSessionActive,
     sessionId,
@@ -106,8 +107,12 @@ export const useSession = () => {
     });
 
     socket.on('action:hold', (holdData: ActiveHoldData) => {
+      const currentCaller = useSessionStore.getState().callerNumber;
+      const isFile = currentCaller && /\.(wav|mp3|m4a|ogg|aac|flac|webm|opus)$/i.test(currentCaller);
       setActiveHold({
         ...holdData,
+        callerName: holdData.callerName || (isFile ? undefined : currentCaller),
+        fileName: holdData.fileName || (isFile ? currentCaller : undefined),
         status: holdData.status || 'held'
       });
     });
@@ -333,6 +338,7 @@ export const useSession = () => {
     const storedUser = localStorage.getItem('guardcall_user');
     const userId = storedUser ? JSON.parse(storedUser)?._id || 'anonymous' : 'anonymous';
     const effectiveCaller = file.name || 'Voice File';
+    setCallerNumber(effectiveCaller);
 
     if (socket) {
       socket.emit('session:start', { callerNumber: effectiveCaller, sessionId: newSessionId, userId });
@@ -352,6 +358,7 @@ export const useSession = () => {
     setSessionActive(true);
   }, [
     socket,
+    setCallerNumber,
     setSessionId,
     setSessionActive,
     startFileAnalysis,

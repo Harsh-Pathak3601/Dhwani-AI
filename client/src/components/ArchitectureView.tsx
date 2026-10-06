@@ -399,7 +399,7 @@ export default function ArchitectureView() {
 
   return (
     <div className="min-h-screen text-white pt-4 sm:pt-6 pb-20 px-3 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-12 relative z-10 w-full max-w-full overflow-hidden">
-      
+
       {/* Background ambient aesthetic */}
       <div className="animated-grid-bg opacity-25 pointer-events-none" />
 
@@ -441,11 +441,11 @@ export default function ArchitectureView() {
       {/* ─── SYSTEM BLUEPRINT FLOWCHART CANVAS (CIRCUIT DIAGRAM) ─── */}
       <div className="rounded-3xl glass-card-strong border border-amber-500/25 shadow-[0_20px_60px_rgba(0,0,0,0.7),0_0_30px_rgba(255,109,0,0.1)] overflow-hidden relative">
 
-        {/* Blueprint Circuit Matrix Grid */}
+    
         <div className="absolute inset-0 bg-[radial-gradient(#f59e0b12_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none opacity-50" />
         <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Flowchart Control Strip Header */}
+    
         <div className="relative z-10 px-5 sm:px-8 py-4 border-b border-white/10 bg-[#0B1523]/80 backdrop-blur-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300 shadow-[0_0_15px_rgba(255,109,0,0.25)]">
@@ -476,18 +476,17 @@ export default function ArchitectureView() {
           </div>
         </div>
 
-        {/* Flowchart Visual Grid Board */}
+      
         <div className="relative z-10 p-5 sm:p-8 lg:p-10 space-y-8">
 
           {/* ──────── LANE 1: INGESTION NODE ──────── */}
           <div className="flex justify-center">
             <div
               onClick={() => setSelectedNode('tap')}
-              className={`w-full max-w-xl cursor-pointer p-5 rounded-2xl transition-all duration-300 border flex flex-col justify-between relative overflow-hidden group ${
-                selectedNode === 'tap'
+              className={`w-full max-w-xl cursor-pointer p-5 rounded-2xl transition-all duration-300 border flex flex-col justify-between relative overflow-hidden group ${selectedNode === 'tap'
                   ? 'bg-[#132238]/90 border-amber-400 shadow-[0_0_30px_rgba(255,109,0,0.3)] ring-1 ring-amber-400/50'
                   : 'glass-card border-white/10 hover:border-amber-500/50 hover:bg-[#132238]/60 hover:shadow-[0_0_20px_rgba(255,109,0,0.15)]'
-              }`}
+                }`}
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] font-mono font-bold uppercase text-amber-400 tracking-wider flex items-center gap-1.5">
@@ -512,7 +511,6 @@ export default function ArchitectureView() {
             <div className="w-full max-w-2xl flex flex-col items-center">
               {/* Vertical Stem */}
               <div className="w-0.5 h-6 bg-gradient-to-b from-amber-400 to-white/40" />
-              {/* Horizontal Bar with Split Arrows */}
               <div className="w-full h-0.5 bg-white/20 relative">
                 <div className="absolute left-0 top-[-3px] w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
                 <div className="absolute right-0 top-[-3px] w-2 h-2 rounded-full bg-purple-400 shadow-[0_0_8px_rgba(168,85,247,0.8)]" />
@@ -520,7 +518,6 @@ export default function ArchitectureView() {
                   PARALLEL NON-CONTAMINATING TAP
                 </div>
               </div>
-              {/* Two Branch Drop Stems */}
               <div className="w-full flex justify-between px-6">
                 <div className="w-0.5 h-6 bg-gradient-to-b from-white/20 to-cyan-400" />
                 <div className="w-0.5 h-6 bg-gradient-to-b from-white/20 to-purple-400" />
@@ -545,14 +542,13 @@ export default function ArchitectureView() {
                 </span>
               </div>
 
-              {/* Subnode 1: DSP Extractor */}
+            
               <div
                 onClick={() => setSelectedNode('dsp')}
-                className={`p-4 rounded-xl cursor-pointer transition-all border group ${
-                  selectedNode === 'dsp'
+                className={`p-4 rounded-xl cursor-pointer transition-all border group ${selectedNode === 'dsp'
                     ? 'bg-cyan-950/50 border-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.3)] ring-1 ring-cyan-400/50'
                     : 'bg-black/30 hover:bg-black/50 border-white/10 hover:border-cyan-500/40'
-                }`}
+                  }`}
               >
                 <div className="flex items-center justify-between">
                   <h5 className="font-bold text-white text-xs sm:text-sm flex items-center gap-1.5 font-brand group-hover:text-cyan-300 transition-colors">
@@ -566,7 +562,6 @@ export default function ArchitectureView() {
                 </p>
               </div>
 
-              {/* Connector Arrow */}
               <div className="flex justify-center my-[-4px]">
                 <HiOutlineArrowDown className="w-3.5 h-3.5 text-cyan-400/60" />
               </div>
@@ -574,11 +569,10 @@ export default function ArchitectureView() {
               {/* Subnode 2: AASIST Neural Engine */}
               <div
                 onClick={() => setSelectedNode('aasist')}
-                className={`p-4 rounded-xl cursor-pointer transition-all border group ${
-                  selectedNode === 'aasist'
+                className={`p-4 rounded-xl cursor-pointer transition-all border group ${selectedNode === 'aasist'
                     ? 'bg-cyan-950/50 border-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.3)] ring-1 ring-cyan-400/50'
                     : 'bg-black/30 hover:bg-black/50 border-white/10 hover:border-cyan-500/40'
-                }`}
+                  }`}
               >
                 <div className="flex items-center justify-between">
                   <h5 className="font-bold text-white text-xs sm:text-sm flex items-center gap-1.5 font-brand group-hover:text-cyan-300 transition-colors">
@@ -612,11 +606,10 @@ export default function ArchitectureView() {
               {/* Subnode 1: Deepgram STT */}
               <div
                 onClick={() => setSelectedNode('stt')}
-                className={`p-4 rounded-xl cursor-pointer transition-all border group ${
-                  selectedNode === 'stt'
+                className={`p-4 rounded-xl cursor-pointer transition-all border group ${selectedNode === 'stt'
                     ? 'bg-purple-950/50 border-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.3)] ring-1 ring-purple-400/50'
                     : 'bg-black/30 hover:bg-black/50 border-white/10 hover:border-purple-500/40'
-                }`}
+                  }`}
               >
                 <div className="flex items-center justify-between">
                   <h5 className="font-bold text-white text-xs sm:text-sm flex items-center gap-1.5 font-brand group-hover:text-purple-300 transition-colors">
@@ -638,11 +631,10 @@ export default function ArchitectureView() {
               {/* Subnode 2: Groq LPU Llama 3 & Biometrics */}
               <div
                 onClick={() => setSelectedNode('groq')}
-                className={`p-4 rounded-xl cursor-pointer transition-all border group ${
-                  selectedNode === 'groq'
+                className={`p-4 rounded-xl cursor-pointer transition-all border group ${selectedNode === 'groq'
                     ? 'bg-purple-950/50 border-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.3)] ring-1 ring-purple-400/50'
                     : 'bg-black/30 hover:bg-black/50 border-white/10 hover:border-purple-500/40'
-                }`}
+                  }`}
               >
                 <div className="flex items-center justify-between">
                   <h5 className="font-bold text-white text-xs sm:text-sm flex items-center gap-1.5 font-brand group-hover:text-purple-300 transition-colors">
@@ -684,17 +676,16 @@ export default function ArchitectureView() {
           <div className="flex justify-center">
             <div
               onClick={() => setSelectedNode('fusion')}
-              className={`w-full max-w-2xl cursor-pointer p-6 rounded-2xl transition-all duration-300 border flex flex-col justify-between relative overflow-hidden group ${
-                selectedNode === 'fusion'
+              className={`w-full max-w-2xl cursor-pointer p-6 rounded-2xl transition-all duration-300 border flex flex-col justify-between relative overflow-hidden group ${selectedNode === 'fusion'
                   ? 'bg-gradient-to-r from-orange-950/70 via-[#0e1d2c] to-amber-950/70 border-amber-400 shadow-[0_0_30px_rgba(255,109,0,0.35)] ring-1 ring-amber-400/50'
                   : 'bg-[#0A1726]/80 hover:bg-[#0e1d2c] border-amber-500/30 shadow-lg'
-              }`}
+                }`}
             >
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(255,171,0,0.8)]" />
                   <span className="font-mono text-xs font-bold uppercase tracking-wider text-amber-300">
-                    STAGE 3: SECURITY POLICY FUSION GATE
+                    SECURITY POLICY FUSION GATE
                   </span>
                 </div>
                 <span className="text-[10px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
@@ -746,11 +737,10 @@ export default function ArchitectureView() {
             {/* Outcome 1: Out-of-Band Financial Intervention */}
             <div
               onClick={() => setSelectedNode('oob')}
-              className={`p-5 rounded-2xl cursor-pointer transition-all border flex flex-col justify-between group ${
-                selectedNode === 'oob'
+              className={`p-5 rounded-2xl cursor-pointer transition-all border flex flex-col justify-between group ${selectedNode === 'oob'
                   ? 'bg-gradient-to-b from-amber-950/60 to-[#0B1523] border-amber-400 shadow-[0_0_25px_rgba(245,158,11,0.3)] ring-1 ring-amber-400/40'
                   : 'bg-[#091522]/80 hover:bg-[#0c1a2b] border-amber-500/30 hover:border-amber-400/50'
-              }`}
+                }`}
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] font-mono font-bold uppercase text-amber-400 flex items-center gap-1.5">
@@ -772,11 +762,10 @@ export default function ArchitectureView() {
             {/* Outcome 2: Cryptographic Ledger & Legal Audit */}
             <div
               onClick={() => setSelectedNode('ledger')}
-              className={`p-5 rounded-2xl cursor-pointer transition-all border flex flex-col justify-between group ${
-                selectedNode === 'ledger'
+              className={`p-5 rounded-2xl cursor-pointer transition-all border flex flex-col justify-between group ${selectedNode === 'ledger'
                   ? 'bg-gradient-to-b from-emerald-950/60 to-[#0B1523] border-emerald-400 shadow-[0_0_25px_rgba(16,185,129,0.3)] ring-1 ring-emerald-400/40'
                   : 'bg-[#091522]/80 hover:bg-[#0c1a2b] border-emerald-500/30 hover:border-emerald-400/50'
-              }`}
+                }`}
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] font-mono font-bold uppercase text-emerald-400 flex items-center gap-1.5">
@@ -971,48 +960,44 @@ export default function ArchitectureView() {
           <div className="flex flex-wrap items-center gap-1.5 bg-black/40 p-1 rounded-xl border border-white/10 text-xs">
             <button
               onClick={() => setActiveTab('all')}
-              className={`px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${
-                activeTab === 'all'
+              className={`px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${activeTab === 'all'
                   ? 'bg-amber-500/25 text-amber-300 border border-amber-500/40 shadow-sm shadow-orange-500/20'
                   : 'text-white/60 hover:text-white'
-              }`}
+                }`}
             >
               All Modules
             </button>
             <button
               onClick={() => setActiveTab('acoustic')}
-              className={`px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${
-                activeTab === 'acoustic'
+              className={`px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${activeTab === 'acoustic'
                   ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
                   : 'text-white/60 hover:text-white'
-              }`}
+                }`}
             >
               Acoustic DSP
             </button>
             <button
               onClick={() => setActiveTab('semantic')}
-              className={`px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${
-                activeTab === 'semantic'
+              className={`px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${activeTab === 'semantic'
                   ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40 shadow-sm'
                   : 'text-white/60 hover:text-white'
-              }`}
+                }`}
             >
               Semantic &amp; Identity
             </button>
             <button
               onClick={() => setActiveTab('intervention')}
-              className={`px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${
-                activeTab === 'intervention'
+              className={`px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${activeTab === 'intervention'
                   ? 'bg-amber-500/25 text-amber-300 border border-amber-500/40 shadow-sm shadow-orange-500/20'
                   : 'text-white/60 hover:text-white'
-              }`}
+                }`}
             >
               Policy &amp; Legal
             </button>
           </div>
         </div>
 
-        {/* The Grid of Polished Cards */}
+       
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredPillars.map((pillar) => {
             const Icon = pillar.icon;
@@ -1022,7 +1007,6 @@ export default function ArchitectureView() {
                 className="rounded-3xl p-6 glass-card border border-white/10 hover:border-amber-500/50 hover:shadow-[0_20px_50px_rgba(0,0,0,0.7),0_0_25px_rgba(255,109,0,0.15)] hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between relative group"
               >
                 <div>
-                  {/* Top Bar inside Card */}
                   <div className="flex items-center justify-between mb-4">
                     <span className="px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/10 text-[10px] font-mono font-semibold text-white/70 uppercase tracking-wider">
                       {pillar.category}
@@ -1033,7 +1017,6 @@ export default function ArchitectureView() {
                     </div>
                   </div>
 
-                  {/* Title & Subtitle */}
                   <h4 className="text-base sm:text-lg font-bold text-white tracking-tight mb-1 font-brand group-hover:text-amber-300 transition-colors">
                     {pillar.title}
                   </h4>
@@ -1041,13 +1024,12 @@ export default function ArchitectureView() {
                     {pillar.subtitle}
                   </p>
 
-                  {/* Description */}
                   <p className="text-xs text-white/60 leading-relaxed mb-5 font-sans">
                     {pillar.description}
                   </p>
                 </div>
 
-                {/* Bottom Tech Pills & Benchmark */}
+              
                 <div className="pt-4 border-t border-white/[0.08] space-y-3">
                   <div className="flex flex-wrap gap-1.5">
                     {pillar.features.map((feature) => (
@@ -1073,7 +1055,7 @@ export default function ArchitectureView() {
         </div>
       </div>
 
-      {/* ─── BOTTOM LAUNCH BAR ─── */}
+    
       <div className="text-center pt-4">
         <Link
           to="/app"

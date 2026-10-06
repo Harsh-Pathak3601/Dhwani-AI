@@ -1,37 +1,37 @@
 import { Router, Request, Response } from 'express';
-import { detectSyntheticVoiceBatch, isModulateConfigured } from '../services/modulateService.js';
+import { detectSyntheticVoiceBatch, isForensicAcousticConfigured } from '../services/forensicAcousticService.js';
 import logger from '../utils/logger.js';
 
 const router: Router = Router();
 
 /**
- * GET /api/modulate/status
- * Check if Modulate.ai Velma API key is active
+ * GET /status
+ * Checks status of Forensic Acoustic engine
  */
 router.get('/status', (_req: Request, res: Response) => {
-  const configured = isModulateConfigured();
+  const configured = isForensicAcousticConfigured();
   res.json({
     status: 'ok',
     configured,
     models: {
-      streaming: 'velma-2-synthetic-voice-detection-streaming',
-      batch: 'velma-2-synthetic-voice-detection-batch',
+      streaming: 'forensic-acoustic-streaming',
+      batch: 'forensic-acoustic-batch',
     },
     message: configured
-      ? 'Modulate Velma-2 Synthetic Voice Detection is active'
-      : 'MODULATE_API_KEY is not set. Add it in server/.env to enable Velma models.',
+      ? 'Forensic Acoustic Synthetic Voice Detection is active'
+      : 'API key is not configured in server/.env',
   });
 });
 
 /**
- * POST /api/modulate/analyze-batch
- * Accepts base64 audio payload or raw body for batch deepfake analysis
+ * POST /analyze-batch
+ * Accepts base64 audio payload or raw body for batch acoustic analysis
  */
 router.post('/analyze-batch', async (req: Request, res: Response) => {
   try {
-    if (!isModulateConfigured()) {
+    if (!isForensicAcousticConfigured()) {
       return res.status(503).json({
-        error: 'Modulate.ai is not configured. Please supply MODULATE_API_KEY in server/.env',
+        error: 'Forensic Acoustic Engine is not configured. Please supply API key in server/.env',
       });
     }
 
@@ -49,8 +49,8 @@ router.post('/analyze-batch', async (req: Request, res: Response) => {
       result,
     });
   } catch (err: any) {
-    logger.error('Error in /api/modulate/analyze-batch', { error: err.message });
-    res.status(500).json({ error: err.message || 'Failed to process audio with Velma-2 Batch' });
+    logger.error('Error in /analyze-batch', { error: err.message });
+    res.status(500).json({ error: err.message || 'Failed to process audio with Forensic Acoustic Engine' });
   }
 });
 

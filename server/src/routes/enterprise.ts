@@ -7,6 +7,8 @@ import { triggerOOBVerification } from '../services/trustChannelService.js';
 import crypto from 'crypto';
 
 const router: Router = Router();
+
+// Demo API keys store in-memory for playground & sandbox
 const registeredApiKeys = new Map<string, {
   keyId: string;
   name: string;
@@ -17,7 +19,7 @@ const registeredApiKeys = new Map<string, {
   callsCount: number;
 }>();
 
-
+// Seed initial enterprise keys
 registeredApiKeys.set('dhwani_live_sec_core_bank_9921', {
   keyId: 'key_bank_prod_01',
   name: 'Core Banking Production Key',

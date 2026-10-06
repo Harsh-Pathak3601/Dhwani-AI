@@ -8,7 +8,7 @@ import { evaluateSecurityPolicy, PolicyDecision } from '../services/policyEngine
 import { generateLivenessChallenge, evaluateLivenessResponse } from '../services/livenessService.js';
 import { triggerOOBVerification, resolveOOBVerification, getActiveHold } from '../services/trustChannelService.js';
 import { recordEvidence } from '../services/evidenceService.js';
-import { createVelmaStreamingSession, VelmaStreamingSession, VelmaFrameVerdict } from '../services/modulateService.js';
+import { createForensicAcousticStreamingSession, ForensicAcousticStreamingSession, ForensicAcousticFrameVerdict } from '../services/forensicAcousticService.js';
 import logger from '../utils/logger.js';
 
 interface SessionData {
@@ -19,6 +19,45 @@ interface SessionData {
   finalRiskScore?: number;
   livenessScore?: number | null;
   lastCoachingSent?: string;
+}
+
+export function extractSpokenAmount(text: string): string | null {
+  if (!text || typeof text !== 'string') return null;
+
+  // 1. Symbol-prefixed amounts: ₹50,00,000, ₹50 lakh, Rs. 50,000, $10,000, etc.
+  const symbolMatch = text.match(/(?:₹|Rs\.?|INR|\$|USD|EUR|€|GBP|£)\s*[\d,]+(?:\.\d+)?(?:\s*(?:lakh|crore|k|m|million|thousand|crores|lakhs))?/i);
+  if (symbolMatch) {
+    let result = symbolMatch[0].trim();
+    if (result.startsWith('Rs') || result.startsWith('INR')) {
+      result = result.replace(/^(?:Rs\.?|INR)\s*/i, '₹');
+    }
+    return result;
+  }
+
+  // 2. Number + denomination unit: 50 lakh, 10 crore, 25 thousand, 50000 rupees
+  const unitMatch = text.match(/\b(?:\d+(?:,\d+)*(?:\.\d+)?)\s*(?:lakh|crore|thousand|million|billion|rupees|dollars|inr|usd|bucks)\b/i);
+  if (unitMatch) {
+    const val = unitMatch[0].trim();
+    if (/lakh|crore|rupee|inr/i.test(val)) {
+      return val.startsWith('₹') ? val : `₹${val}`;
+    }
+    return val;
+  }
+
+  // 3. Spoken number words with denomination: e.g. "fifty lakh", "twenty thousand", "two crore"
+  const wordMatch = text.match(/\b(?:fifty|twenty|thirty|forty|sixty|seventy|eighty|ninety|ten|five|two|one|three|four)\s+(?:lakh|crore|thousand|million|billion|rupees|dollars)\b/i);
+  if (wordMatch) {
+    const val = wordMatch[0].trim();
+    return val.toLowerCase().includes('dollar') ? `$${val}` : `₹${val}`;
+  }
+
+  // 4. Large formatted numbers with commas (e.g. 50,00,000 or 50,000)
+  const commaMatch = text.match(/\b\d{1,3}(?:,\d{2,3})+(?:\.\d+)?\b/);
+  if (commaMatch) {
+    return `₹${commaMatch[0].trim()}`;
+  }
+
+  return null;
 }
 
 export const setupCallSocket = (socket: Socket, io: Server) => {
@@ -32,8 +71,6 @@ export const setupCallSocket = (socket: Socket, io: Server) => {
   let lastScoredTranscript = '';
   let lastReceivedTranscript = '';
   let turnTimer: NodeJS.Timeout | null = null;
-
-  // VoiceShield 3-Stage State
   let latestStage1: Stage1AuthResult = createDefaultStage1Result();
   let latestStage2: Stage2IdentityResult = {
     speakerDeviation: null,
@@ -50,24 +87,24 @@ export const setupCallSocket = (socket: Socket, io: Server) => {
   let activeChallengeId: string | null = null;
   let challengeCooldownUntil = 0;
   let hasTriggeredHold = false;
-  let velmaStreamingSession: VelmaStreamingSession | null = null;
+  let forensicAcousticStreamingSession: ForensicAcousticStreamingSession | null = null;
 
   socket.on('session:start', ({ callerNumber, sessionId, userId }) => {
     logger.info(`Session started: ${sessionId}`);
     cleanup();
 
-    const normalizedCaller = (typeof callerNumber === 'string' && callerNumber.trim()) 
-      ? callerNumber.trim() 
+    const normalizedCaller = (typeof callerNumber === 'string' && callerNumber.trim())
+      ? callerNumber.trim()
       : 'Unknown Caller';
     const normalizedUserId = (typeof userId === 'string' && userId.trim())
       ? userId.trim()
       : 'anonymous';
 
-    sessionData = { 
-      callerNumber: normalizedCaller, 
-      sessionId: sessionId || crypto.randomUUID(), 
-      userId: normalizedUserId, 
-      peakRiskScore: 0 
+    sessionData = {
+      callerNumber: normalizedCaller,
+      sessionId: sessionId || crypto.randomUUID(),
+      userId: normalizedUserId,
+      peakRiskScore: 0
     };
     rollingTranscript = '';
     lastScoredTranscript = '';
@@ -97,9 +134,9 @@ export const setupCallSocket = (socket: Socket, io: Server) => {
       turnTimer = null;
     }
 
-    // Initialize Velma-2 Streaming session for real-time synthetic voice detection
-    velmaStreamingSession = createVelmaStreamingSession(sessionData.sessionId, (verdict: VelmaFrameVerdict) => {
-      logger.info(`[Modulate Velma-2] Stream frame verdict: ${verdict.verdict} (conf: ${verdict.confidence})`);
+    // Initialize Forensic Acoustic streaming session for real-time synthetic voice detection
+    forensicAcousticStreamingSession = createForensicAcousticStreamingSession(sessionData.sessionId, (verdict: ForensicAcousticFrameVerdict) => {
+      logger.info(`[Forensic Acoustic] Stream frame verdict: ${verdict.verdict} (conf: ${verdict.confidence})`);
       socket.emit('modulate:verdict', verdict);
 
       if (verdict.verdict === 'synthetic' && verdict.confidence >= 0.5) {
@@ -107,12 +144,12 @@ export const setupCallSocket = (socket: Socket, io: Server) => {
         // Accounts for subtle frame-to-frame vocal entropy
         const dynamicVariance = Math.round(((verdict.confidence * 100) % 5) - 2);
         const syntheticVAS = Math.min(92, Math.max(68, Math.round(58 + verdict.confidence * 30 + dynamicVariance)));
-        
+
         latestStage1.vas = syntheticVAS;
-        if (!latestStage1.artifacts.includes('modulate_velma_synthetic_detected')) {
-          latestStage1.artifacts.push('modulate_velma_synthetic_detected');
+        if (!latestStage1.artifacts.includes('forensic_acoustic_synthetic_detected')) {
+          latestStage1.artifacts.push('forensic_acoustic_synthetic_detected');
         }
-        latestStage1.artifacts = latestStage1.artifacts.filter(a => a !== 'modulate_velma_human_verified');
+        latestStage1.artifacts = latestStage1.artifacts.filter(a => a !== 'forensic_acoustic_human_verified');
         latestStage1.confidence = 'sufficient';
 
         const policy = evaluateSecurityPolicy(latestStage1, latestStage2, activeLivenessScore);
@@ -127,7 +164,7 @@ export const setupCallSocket = (socket: Socket, io: Server) => {
           index: policy.securityRiskIndex,
           peakScore: peakRiskScore,
           explanation: [
-            `Velma-2 detected synthetic audio signature (${syntheticVAS}% confidence).`,
+            `Forensic acoustic engine detected synthetic audio signature (${syntheticVAS}% confidence).`,
             ...(Array.isArray(policy.explanation) ? policy.explanation : [String(policy.explanation)])
           ],
           recommendedAction: policy.recommendedAction,
@@ -135,9 +172,9 @@ export const setupCallSocket = (socket: Socket, io: Server) => {
           requiresHold: policy.requiresHold
         });
       } else if (verdict.verdict === 'non-synthetic' && verdict.confidence >= 0.65) {
-        // Modulate Velma-2 real-time stream confirms authentic organic voice dynamics
-        if (!latestStage1.artifacts.includes('modulate_velma_human_verified') && !latestStage1.artifacts.includes('modulate_velma_synthetic_detected')) {
-          latestStage1.artifacts.push('modulate_velma_human_verified');
+        // Real-time stream confirms authentic organic voice dynamics
+        if (!latestStage1.artifacts.includes('forensic_acoustic_human_verified') && !latestStage1.artifacts.includes('forensic_acoustic_synthetic_detected')) {
+          latestStage1.artifacts.push('forensic_acoustic_human_verified');
           socket.emit('voice:stage1', latestStage1);
         }
       }
@@ -146,34 +183,34 @@ export const setupCallSocket = (socket: Socket, io: Server) => {
 
   /**
    * ─── RAW AUDIO STREAMING CHUNK HANDLER ───
-   * Receives binary audio chunks to forward to Velma-2 Streaming WebSocket
+   * Receives binary audio chunks to forward to Streaming WebSocket
    */
   socket.on('audio:chunk', (chunk: Buffer | ArrayBuffer | Uint8Array) => {
-    if (velmaStreamingSession && chunk) {
-      velmaStreamingSession.sendAudioChunk(chunk);
+    if (forensicAcousticStreamingSession && chunk) {
+      forensicAcousticStreamingSession.sendAudioChunk(chunk);
     }
   });
 
   /**
-   * ─── MODULATE VELMA-2 BATCH RESULT HANDLER ───
-   * Receives whole-file forensic results from Velma-2 Batch API
+   * ─── BATCH FORENSIC RESULT HANDLER ───
+   * Receives whole-file forensic results from Batch API
    */
   socket.on('modulate:batch_result', (batchResult: any) => {
-    logger.info(`[Modulate Velma-2 Batch] Received batch verdict: ${batchResult?.overallVerdict} (maxConf: ${batchResult?.maxConfidence})`);
+    logger.info(`[Forensic Batch] Received batch verdict: ${batchResult?.overallVerdict} (maxConf: ${batchResult?.maxConfidence})`);
     if (batchResult && batchResult.syntheticFramesCount > 0 && batchResult.maxConfidence >= 0.5) {
       const maxConf = Number(batchResult.maxConfidence || 0.85);
       const avgConf = Number(batchResult.avgConfidence || maxConf);
       const frameRatio = batchResult.totalFramesCount > 0 ? (batchResult.syntheticFramesCount / batchResult.totalFramesCount) : 1;
-      
+
       // Multi-factor confidence calibration:
       // Reflects peak frame (50%), whole-file average (30%), and synthetic presence duration (20%)
       const calibratedConf = (maxConf * 0.50) + (avgConf * 0.30) + (frameRatio * 0.20);
       const dynamicVariance = Math.round(((calibratedConf * 100) % 5) - 2);
       const batchVAS = Math.min(92, Math.max(70, Math.round(60 + calibratedConf * 28 + dynamicVariance)));
-      
+
       latestStage1.vas = batchVAS;
-      if (!latestStage1.artifacts.includes('modulate_velma_batch_synthetic_detected')) {
-        latestStage1.artifacts.push('modulate_velma_batch_synthetic_detected');
+      if (!latestStage1.artifacts.includes('forensic_acoustic_batch_synthetic_detected')) {
+        latestStage1.artifacts.push('forensic_acoustic_batch_synthetic_detected');
       }
       latestStage1.confidence = 'sufficient';
 
@@ -189,7 +226,7 @@ export const setupCallSocket = (socket: Socket, io: Server) => {
         index: policy.securityRiskIndex,
         peakScore: peakRiskScore,
         explanation: [
-          `Velma-2 Batch forensic analysis detected synthetic voice pattern (${batchVAS}% confidence).`,
+          `Forensic acoustic analysis detected synthetic voice pattern (${batchVAS}% confidence).`,
           ...(Array.isArray(policy.explanation) ? policy.explanation : [String(policy.explanation)])
         ],
         recommendedAction: policy.recommendedAction,
@@ -197,9 +234,9 @@ export const setupCallSocket = (socket: Socket, io: Server) => {
         requiresHold: policy.requiresHold
       });
     } else if (batchResult && batchResult.overallVerdict === 'non-synthetic') {
-      logger.info(`[Modulate Velma-2 Batch] Confirmed authentic living human voice across ${batchResult.totalFramesCount} frames.`);
-      if (!latestStage1.artifacts.includes('modulate_velma_human_verified') && !latestStage1.artifacts.includes('modulate_velma_synthetic_detected')) {
-        latestStage1.artifacts.push('modulate_velma_human_verified');
+      logger.info(`[Forensic Batch] Confirmed authentic living human voice across ${batchResult.totalFramesCount} frames.`);
+      if (!latestStage1.artifacts.includes('forensic_acoustic_human_verified') && !latestStage1.artifacts.includes('forensic_acoustic_synthetic_detected')) {
+        latestStage1.artifacts.push('forensic_acoustic_human_verified');
       }
       latestStage1.confidence = 'sufficient';
 
@@ -210,7 +247,7 @@ export const setupCallSocket = (socket: Socket, io: Server) => {
         index: policy.securityRiskIndex,
         peakScore: peakRiskScore,
         explanation: [
-          `Modulate Velma-2 verified authentic human voice (${batchResult.totalFramesCount} frames analyzed).`,
+          `Forensic acoustic engine verified authentic human voice (${batchResult.totalFramesCount} frames analyzed).`,
           ...(Array.isArray(policy.explanation) ? policy.explanation : [String(policy.explanation)])
         ],
         recommendedAction: policy.recommendedAction,
@@ -239,6 +276,33 @@ export const setupCallSocket = (socket: Socket, io: Server) => {
       // 1. Stage 1: Ultra-Fast Voice Authenticity ML (<0.1ms)
       const stage1 = await analyzeVoiceAuthenticity(features);
       if (!sessionData) return;
+
+      // Ensure Forensic Acoustic authoritative verdict is preserved and prioritized:
+      // If forensic engine detected synthetic voice, local DSP feature ticks must not overwrite it.
+      const hasAcousticSynthetic = latestStage1.artifacts.some(a =>
+        a.includes('synthetic_detected')
+      );
+      const hasAcousticHuman = latestStage1.artifacts.some(a =>
+        a.includes('human_verified')
+      );
+
+      if (hasAcousticSynthetic) {
+        // Forensic engine detected synthetic: maintain high VAS
+        stage1.vas = Math.max(stage1.vas, latestStage1.vas);
+        latestStage1.artifacts.forEach(art => {
+          if (art.includes('synthetic_detected') && !stage1.artifacts.includes(art)) {
+            stage1.artifacts.push(art);
+          }
+        });
+      } else if (hasAcousticHuman && stage1.vas < 60) {
+        // Reinforced human confidence
+        if (!stage1.artifacts.some(a => a.includes('human_verified'))) {
+          stage1.artifacts.push('forensic_acoustic_human_verified');
+        }
+        // Slightly damp spurious DSP micro-artifacts if verified authentic voice
+        stage1.vas = Math.min(stage1.vas, 35);
+      }
+
       latestStage1 = stage1;
       socket.emit('voice:stage1', stage1);
 
@@ -281,18 +345,25 @@ export const setupCallSocket = (socket: Socket, io: Server) => {
       // Handle Consequence Escalation: Transaction Hold & Independent Trust Channel
       if (policy.requiresHold && !hasTriggeredHold) {
         hasTriggeredHold = true;
+        const detectedAmount = extractSpokenAmount(rollingTranscript);
+        const amountFormatted = detectedAmount || 'HIGH TRANSACTION ALERT';
+        const isAudioFile = /\.(wav|mp3|m4a|ogg|aac|flac|webm|opus)$/i.test(currentSession.callerNumber);
         const oob = triggerOOBVerification(
           currentSession.sessionId,
           currentSession.callerNumber,
           policy.recommendedAction,
-          '₹50,00,000'
+          amountFormatted
         );
 
         socket.emit('action:hold', {
           transactionRef: oob.transactionRef,
           status: 'held',
-          reason: 'Emergency ₹50 Lakh Transfer Requested on Suspicious Synthetic Voice',
+          reason: detectedAmount
+            ? `Emergency ${detectedAmount} Transfer Requested on Suspicious Synthetic Voice`
+            : 'High-Stakes Emergency Transfer Requested on Suspicious Synthetic Voice',
           heldAmount: oob.amountFormatted,
+          callerName: isAudioFile ? undefined : currentSession.callerNumber,
+          fileName: isAudioFile ? currentSession.callerNumber : undefined,
           oobId: oob.oobId,
           targetDevice: oob.targetDevice,
           timestamp: oob.initiatedAt
@@ -434,12 +505,12 @@ export const setupCallSocket = (socket: Socket, io: Server) => {
             sessionData.lastCoachingSent = coaching;
           }
 
-          socket.emit('risk:update', { 
-            risk: effectiveRisk, 
-            signal: signal || (currentAcousticRisk >= 60 ? `Synthetic Voice Anomaly (${currentAcousticRisk}% VAS)` : ''), 
-            phase, 
-            coaching, 
-            peakRiskScore 
+          socket.emit('risk:update', {
+            risk: effectiveRisk,
+            signal: signal || (currentAcousticRisk >= 60 ? `Synthetic Voice Anomaly (${currentAcousticRisk}% VAS)` : ''),
+            phase,
+            coaching,
+            peakRiskScore
           });
         } catch (e: any) {
           logger.error('Error scoring risk', { error: e.message });
@@ -501,7 +572,7 @@ export const setupCallSocket = (socket: Socket, io: Server) => {
     try {
       if (isCleared) {
         await handleSessionEnd(activeSessionData, null);
-        
+
         const cleanReport = {
           _id: new mongoose.Types.ObjectId().toString(),
           sessionId: activeSessionData.sessionId,
@@ -509,7 +580,7 @@ export const setupCallSocket = (socket: Socket, io: Server) => {
           callerNumber: activeSessionData.callerNumber,
           summary: livenessPassed
             ? `Call verified authentic. Active voice liveness challenge was successfully completed (score: ${activeLivenessScore}/100), verifying natural human vocal fold dynamics and clearing unverified threat alerts. Final risk resolved to ${finalRiskScore}/100 (Safe).`
-            : rollingTranscript.trim() 
+            : rollingTranscript.trim()
               ? `Call completed with zero fraudulent indicators or acoustic anomalies detected. Monitored ${rollingTranscript.split(/\s+/).filter(Boolean).length} conversational words. Final risk: ${finalRiskScore}/100.`
               : 'Routine call completed safely. No scam patterns or synthetic voice signatures detected during this session.',
           scamType: livenessPassed ? 'Clean / Verified Safe Call (Liveness Passed)' : 'Clean / Verified Safe Call',
@@ -602,9 +673,9 @@ export const setupCallSocket = (socket: Socket, io: Server) => {
   });
 
   function cleanup() {
-    if (velmaStreamingSession) {
-      velmaStreamingSession.close();
-      velmaStreamingSession = null;
+    if (forensicAcousticStreamingSession) {
+      forensicAcousticStreamingSession.close();
+      forensicAcousticStreamingSession = null;
     }
     if (turnTimer) {
       clearTimeout(turnTimer);

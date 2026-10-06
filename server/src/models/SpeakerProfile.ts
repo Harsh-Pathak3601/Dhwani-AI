@@ -1,13 +1,13 @@
 import mongoose, { Document, Model } from 'mongoose';
 
 export interface ISpeakerProfile extends Document {
-  phoneNumberHash: string;          // Hashed caller phone number (SHA-256 for privacy / DPDP Act)
-  phoneNumberMasked: string;        // e.g. +91 ****** 4821 for display
-  voiceEmbedding: number[];         // 192-dim ECAPA-TDNN embedding vector
-  enrollmentFlow: 'authenticated' | 'none'; // NEVER enrolled directly from an unverified live call
+  phoneNumberHash: string;         
+  phoneNumberMasked: string;      
+  voiceEmbedding: number[];         
+  enrollmentFlow: 'authenticated' | 'none'; 
   sessionCount: number;
-  avgVAS: number;                   // Historical average Voice Authenticity Score (0-100)
-  consistencyScore: number;         // Historical stability/sigma (lower variance = higher confidence)
+  avgVAS: number;                   
+  consistencyScore: number;         
   flaggedSessions: number;
   lastSeen: Date;
   embeddingExpiry: Date;            // Auto-expire after 90 days

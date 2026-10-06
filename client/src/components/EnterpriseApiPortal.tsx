@@ -542,8 +542,6 @@ message VerificationVerdict {
 
   return (
     <div className="min-h-screen text-white pt-4 sm:pt-6 pb-20 px-3 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-12 relative z-10 w-full max-w-full overflow-hidden">
-      
-      {/* Subtle background ambient overlay that harmonizes with nexus-cyber.html */}
       <div className="animated-grid-bg opacity-30 pointer-events-none" />
 
       {/* ─── Hero Section ─── */}
@@ -564,7 +562,7 @@ message VerificationVerdict {
           <span className="text-amber-300 font-medium"> Telecom Networks</span>.
         </p>
 
-        {/* Protocol badges */}
+       
         <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
           <span className="px-3 py-1 rounded-full text-xs font-mono bg-white/[0.04] text-white/80 border border-white/10 flex items-center gap-1.5 backdrop-blur-md">
             <span className="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_6px_rgba(255,171,0,0.6)]" />
@@ -585,7 +583,6 @@ message VerificationVerdict {
         </div>
       </div>
 
-      {/* ─── Quick Cluster Telemetry Bar ─── */}
       <div className="rounded-2xl glass-card-strong border border-amber-500/25 p-4 sm:p-5 shadow-[0_10px_40px_rgba(0,0,0,0.6),0_0_25px_rgba(255,109,0,0.12)]">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 divide-y md:divide-y-0 md:divide-x divide-white/[0.08] text-center">
           <div className="pt-2 md:pt-0">
@@ -610,7 +607,7 @@ message VerificationVerdict {
         </div>
       </div>
 
-      {/* ─── 4 Target Integration Architectures ─── */}
+  
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/[0.08] pb-3">
           <div>

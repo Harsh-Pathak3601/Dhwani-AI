@@ -94,7 +94,11 @@ router.post('/transcribe-file', express.raw({ type: '*/*', limit: '40mb' }), asy
 
     const contentType = req.headers['content-type'] || 'audio/wav';
 
-    const response = await fetch('https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true', {
+    const langParam = req.query.language
+      ? `&language=${encodeURIComponent(String(req.query.language))}`
+      : '&detect_language=true';
+
+    const response = await fetch(`https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true${langParam}`, {
       method: 'POST',
       headers: {
         'Authorization': `Token ${apiKey}`,

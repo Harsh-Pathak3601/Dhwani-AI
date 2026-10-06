@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ShieldAlert, AlertOctagon, Smartphone, ArrowRight, Lock, X } from 'lucide-react';
-import { ActiveHoldData } from '../store/useSessionStore';
+import { ActiveHoldData, useSessionStore } from '../store/useSessionStore';
+import { extractSpokenAmount } from './OOBVerificationModal';
 
 interface PreTransactionWarningModalProps {
   hold: ActiveHoldData;
@@ -14,6 +15,33 @@ export const PreTransactionWarningModal = ({
   onOpenOOB,
   onDismiss
 }: PreTransactionWarningModalProps) => {
+  const transcript = useSessionStore((state) => state.transcript);
+  const callerNumber = useSessionStore((state) => state.callerNumber);
+  const isDemoAttackRunning = useSessionStore((state) => state.isDemoAttackRunning);
+
+  const heardAmount = (() => {
+    if (isDemoAttackRunning) return '₹50,00,000';
+    const fromTranscript = extractSpokenAmount(transcript);
+    if (fromTranscript) return fromTranscript;
+    const fromReason = extractSpokenAmount(hold.reason || '');
+    if (fromReason) return fromReason;
+    if (hold.heldAmount && hold.heldAmount !== 'HIGH TRANSACTION ALERT' && hold.heldAmount !== '₹50,00,000') {
+      return hold.heldAmount;
+    }
+    return null;
+  })();
+
+  const hasHeardAmount = Boolean(heardAmount);
+  const displayAmount = heardAmount || 'HIGH TRANSACTION ALERT';
+
+  const callerOrFileName = (() => {
+    if (isDemoAttackRunning) return 'Rajiv Verma (CFO)';
+    if (hold.fileName) return hold.fileName;
+    if (hold.callerName) return hold.callerName;
+    if (callerNumber && callerNumber !== 'Unknown Caller') return callerNumber;
+    return '';
+  })();
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -74,11 +102,13 @@ export const PreTransactionWarningModal = ({
             <span>TXN REF: {hold.transactionRef}</span>
             <span className="text-danger font-bold uppercase">STATUS: HELD</span>
           </div>
-          <div className="text-2xl font-black text-white font-mono my-1">
-            {hold.heldAmount || '₹50,00,000'}
+          <div className={`font-black font-mono my-1 ${hasHeardAmount ? 'text-2xl text-white' : 'text-lg text-amber-400 py-0.5'}`}>
+            {displayAmount}
           </div>
           <p className="text-xs text-white/80 leading-snug mt-1">
-            {hold.reason || 'High-stakes financial transaction requested during detected voice cloning attack.'}
+            {callerOrFileName
+              ? `High-stakes financial transaction requested from ${callerOrFileName} during detected voice anomaly.`
+              : (hold.reason || 'High-stakes financial transaction requested during detected voice cloning attack.')}
           </p>
         </div>
 

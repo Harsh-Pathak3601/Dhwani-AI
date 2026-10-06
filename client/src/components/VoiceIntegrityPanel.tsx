@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   ShieldAlert, ShieldCheck, Activity, Cpu, Fingerprint,
-  Lock, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp,
-  Target, Sliders, Radio
+  Lock, AlertTriangle, ChevronDown, ChevronUp,
+  Target, Sliders, Radio, CheckCircle2, AlertCircle
 } from 'lucide-react';
 import { VoiceStage1Data, VoiceStage2Data, VoiceRiskState } from '../store/useSessionStore';
 import { VoiceCloneGraph } from './VoiceCloneGraph';
@@ -267,9 +267,9 @@ export const VoiceIntegrityPanel = ({
       })()}
 
       {/* Main Stats Row */}
-      <div className="mt-3.5 grid grid-cols-3 gap-3">
+      <div className="mt-3.5 grid grid-cols-2 gap-3">
         {/* Metric 1: Security Risk Index Gauge */}
-        <div className="bg-black/30 rounded-xl p-2.5 border border-white/5 flex flex-col items-center justify-center text-center">
+        <div className="bg-black/30 rounded-xl p-3 border border-white/5 flex flex-col items-center justify-center text-center">
           <div className="relative w-16 h-16 flex items-center justify-center">
             <svg className="w-16 h-16 transform -rotate-90" viewBox="0 0 70 70">
               <circle
@@ -297,35 +297,32 @@ export const VoiceIntegrityPanel = ({
               <span className="text-lg font-bold font-mono text-white leading-none">
                 {hasVoice ? clampedIndex : '--'}
               </span>
-              <span className="text-[8px] font-mono text-white/50 uppercase mt-0.5">
+              <span className="text-[8px] font-mono text-white/50 uppercase mt-0.5 tracking-wider">
                 {hasVoice ? (latchedPeak > 0 ? `PEAK ${latchedPeak}` : 'LIVE SRI') : 'WAITING'}
               </span>
             </div>
           </div>
-          <span className="text-[10px] font-semibold text-white/60 mt-1 uppercase tracking-wider">
-            {hasVoice ? (latchedPeak > 0 ? `Live Risk (Peak ${latchedPeak})` : 'Live Risk') : 'Risk Index'}
+          <span className="text-[10px] font-bold font-mono text-white/60 mt-1.5 uppercase tracking-wider">
+            Risk Index
           </span>
-          {hasVoice && (
-            <span className="text-[8px] font-mono text-white/45 mt-0.5 truncate" title="Multi-Modal Fusion: Voice VAS + Impersonation Context + Artifacts">
-              Voice ({stage1.vas}%) + Context
-            </span>
-          )}
         </div>
 
-        {/* Metric 2: Stage 1 Voice Authenticity Score (VAS) */}
-        <div className="bg-black/30 rounded-xl p-2.5 border border-white/5 flex flex-col justify-between">
+        {/* Metric 2: AI Synthesis (VAS) */}
+        <div className="bg-black/30 rounded-xl p-3 border border-white/5 flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-mono text-white/50 uppercase">Stage 1: AI Synthesis (VAS)</span>
-            <Cpu className="w-3.5 h-3.5 text-primary/70" />
+            <span className="text-[10px] font-mono text-white/50 uppercase tracking-wider font-semibold">AI Synthesis (VAS)</span>
+            <Cpu className="w-4 h-4 text-orange-500 shrink-0" />
           </div>
           <div className="my-1">
-            <div className="flex items-baseline gap-1">
-              <span className={`text-xl font-bold font-mono ${stage1.vas >= 60 ? 'text-danger' : stage1.vas >= 40 ? 'text-warning' : 'text-primary'}`}>
+            <div className="flex items-baseline gap-1.5">
+              <span className={`text-xl font-bold font-mono ${hasVoice && stage1.vas > 0 ? (stage1.vas >= 60 ? 'text-danger' : stage1.vas >= 40 ? 'text-warning' : 'text-primary') : 'text-orange-500'}`}>
                 {hasVoice && stage1.vas > 0 ? `${stage1.vas}%` : '--'}
               </span>
-              <span className="text-[9px] text-white/40">{hasVoice && stage1.vas > 0 ? 'synthetic probability' : 'awaiting voice'}</span>
+              <span className="text-[9px] text-white/40 font-mono">
+                {hasVoice && stage1.vas > 0 ? 'synthetic probability' : 'awaiting voice'}
+              </span>
             </div>
-            <div className="w-full bg-white/10 rounded-full h-1.5 mt-1 overflow-hidden">
+            <div className="w-full bg-white/10 rounded-full h-1.5 mt-1.5 overflow-hidden">
               <div
                 className="h-full rounded-full transition-all duration-500"
                 style={{
@@ -337,40 +334,6 @@ export const VoiceIntegrityPanel = ({
           </div>
           <span className="text-[9px] text-white/40 truncate font-mono">
             Model: {hasVoice && stage1.vas > 0 ? stage1.model : 'standby'}
-          </span>
-        </div>
-
-        {/* Metric 3: Stage 2 Speaker Consistency (ECAPA-TDNN) */}
-        <div className="bg-black/30 rounded-xl p-2.5 border border-white/5 flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-mono text-white/50 uppercase">Stage 2: Voiceprint</span>
-            <Fingerprint className="w-3.5 h-3.5 text-primary/70" />
-          </div>
-          <div className="my-1">
-            {stage2.profileStatus === 'deviated' ? (
-              <div className="text-danger font-bold text-xs flex items-center gap-1">
-                <span>⚠️ {stage2.speakerDeviation}σ Mismatch</span>
-              </div>
-            ) : stage2.profileStatus === 'consistent' ? (
-              <div className="text-primary font-bold text-xs flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Consistent</span>
-              </div>
-            ) : (
-              <div className="text-white/60 font-semibold text-xs">
-                <span>🔍 No Profile</span>
-              </div>
-            )}
-            <p className="text-[9px] text-white/50 mt-1 truncate">
-              {stage2.profileStatus === 'deviated'
-                ? 'Deviates from enrolled'
-                : stage2.profileStatus === 'consistent'
-                  ? 'Matches historical calls'
-                  : 'First-seen contact'}
-            </p>
-          </div>
-          <span className="text-[9px] text-white/40 truncate font-mono">
-            Impersonation: {hasVoice ? `${stage2.impersonationRisk}%` : '--'}
           </span>
         </div>
       </div>
@@ -485,13 +448,17 @@ export const VoiceIntegrityPanel = ({
                   return (
                     <span
                       key={art}
-                      className={`text-[10px] font-mono px-2 py-0.5 rounded-md flex items-center gap-1 ${
+                      className={`text-[10px] font-mono px-2 py-0.5 rounded-md flex items-center gap-1.5 ${
                         isPositive
                           ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/25'
                           : 'bg-red-500/10 text-red-300 border border-red-500/20'
                       }`}
                     >
-                      <span>{isPositive ? '🟢' : '🔴'}</span>
+                      {isPositive ? (
+                        <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+                      ) : (
+                        <AlertCircle className="w-3 h-3 text-red-400 shrink-0" />
+                      )}
                       <span>{art.replace(/_/g, ' ')}</span>
                     </span>
                   );
@@ -502,16 +469,21 @@ export const VoiceIntegrityPanel = ({
 
           {/* Policy Decision & Explanations */}
           {(() => {
-            const explanationList = Array.isArray(riskState.explanation)
+            const rawExplanationList = Array.isArray(riskState.explanation)
               ? riskState.explanation
               : riskState.explanation
                 ? [String(riskState.explanation)]
                 : [];
+            // Sanitize vendor or internal model names from user-facing frontend UI
+            const explanationList = rawExplanationList
+              .map(exp => exp.replace(/Modulate\s*/gi, '').replace(/Velma(-2)?\s*(Batch)?/gi, 'Forensic Acoustic Engine').trim())
+              .filter(Boolean);
+
             if (explanationList.length === 0) return null;
             return (
               <div className="bg-black/25 rounded-xl p-2.5 border border-white/5">
                 <span className="text-[10px] font-mono text-white/50 uppercase block mb-1">
-                  Stage 3 Security Policy Rationale
+                  Security Policy Rationale
                 </span>
                 <ul className="text-xs text-white/80 space-y-1">
                   {explanationList.map((exp, idx) => (

@@ -67,7 +67,6 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Mute/Unmute Toggle */}
         <button
           id="mute-toggle"
           className="glass-mute-btn"
@@ -76,7 +75,6 @@ export default function LandingPage() {
           type="button"
         >
           {isMuted ? (
-            /* SVG for Volume Muted */
             <svg
               id="icon-muted"
               viewBox="0 0 24 24"
@@ -91,7 +89,6 @@ export default function LandingPage() {
               <line x1="17" y1="9" x2="23" y2="15"></line>
             </svg>
           ) : (
-            /* SVG for Volume High */
             <svg
               id="icon-unmuted"
               viewBox="0 0 24 24"

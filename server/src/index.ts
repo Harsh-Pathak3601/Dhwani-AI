@@ -20,9 +20,9 @@ import sessionRoutes from './routes/sessions.js';
 import reportRoutes from './routes/reports.js';
 import communityRoutes from './routes/community.js';
 import deepgramRoutes from './routes/deepgram.js';
-import voiceRoutes from './routes/voiceApi.js';
+import voiceRoutes from './routes/voice.js';
 import enterpriseRoutes from './routes/enterpriseApi.js';
-import modulateRoutes from './routes/modulateApi.js';
+import forensicRoutes from './routes/forensicApi.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import logger from './utils/logger.js';
 
@@ -34,8 +34,7 @@ const allowedOrigins = Array.from(new Set([cleanClientUrl, 'http://localhost:517
 
 export const app: Express = express();
 
-// Enable trust proxy for reverse proxies (Render, Heroku, Cloudflare)
-// Ensures req.ip accurately reflects the client IP address from X-Forwarded-For
+
 app.set('trust proxy', 1);
 
 const server = http.createServer(app);
@@ -99,7 +98,8 @@ app.use('/api/community', communityRoutes);
 app.use('/api/deepgram', deepgramRoutes);
 app.use('/api/voice', voiceRoutes);
 app.use('/api/enterprise', enterpriseRoutes);
-app.use('/api/modulate', modulateRoutes);
+app.use('/api/forensic', forensicRoutes);
+app.use('/api/modulate', forensicRoutes);
 
 // Error Handler
 app.use(errorHandler);
@@ -136,7 +136,7 @@ if (process.env.NODE_ENV !== 'test') {
  */
 const gracefulShutdown = async (signal: string) => {
   logger.info(`${signal} received. Starting graceful shutdown...`);
-  
+
   server.close(() => {
     logger.info('HTTP server closed');
   });

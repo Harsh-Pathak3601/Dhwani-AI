@@ -53,6 +53,8 @@ export interface ActiveHoldData {
   targetDevice?: string;
   status: 'held' | 'prevented' | 'cleared';
   timestamp?: string | Date;
+  callerName?: string;
+  fileName?: string;
 }
 
 export interface LivenessChallengeData {

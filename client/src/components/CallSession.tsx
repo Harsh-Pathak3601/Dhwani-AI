@@ -74,7 +74,7 @@ const CallSession = () => {
   displayCardDataRef.current = displayCardData;
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Clear previous session artifacts and ensure fresh state on initial mount
+
   useEffect(() => {
     if (!sessionActive) {
       setDisplayCardData(null);
@@ -84,14 +84,13 @@ const CallSession = () => {
     }
   }, []);
 
-  // Automatically open OOB verification modal when a critical transaction hold occurs
+
   useEffect(() => {
     if (activeHold && activeHold.status === 'held') {
       setIsOOBModalOpen(true);
     }
   }, [activeHold]);
 
-  // Lock body scroll without page layout shifting
   useEffect(() => {
     const isModalOpen = Boolean((activeHold && activeHold.status === 'held') || isOOBModalOpen);
     if (isModalOpen) {
@@ -114,7 +113,6 @@ const CallSession = () => {
   const isCallActive = sessionStarted || sessionActive;
 
   useEffect(() => {
-    // Never display threat coaching card if call is not active
     if (!isCallActive) {
       if (displayCardDataRef.current) {
         setDisplayCardData(null);
@@ -123,8 +121,6 @@ const CallSession = () => {
     }
 
     const currentCard = displayCardDataRef.current;
-
-    // Trigger coaching card either from behavioral scam risk (>=40) OR VoiceShield elevated state (Suspicious/High/Critical)
     const isVoiceElevated = ['Suspicious', 'High', 'Critical'].includes(voiceRiskState.state);
     const effectiveRisk = Math.max(riskData.risk, voiceRiskState.index);
 
@@ -256,7 +252,6 @@ const CallSession = () => {
       } else if (reportResult.safe) {
         navigate('/app');
       } else {
-        // Fallback for unsafe session without explicit report: build report and navigate to /report
         const report = createFallbackReport();
         navigate('/report', { state: { report } });
       }
@@ -268,7 +263,6 @@ const CallSession = () => {
     if (isEndingCall && !reportResult) {
       timeout = setTimeout(() => {
         setIsEndingCall(false);
-        // Fallback safety: ALWAYS deliver report, never kick to home!
         const report = createFallbackReport();
         navigate('/report', { state: { report } });
       }, 5000);
@@ -452,7 +446,11 @@ const CallSession = () => {
                   </span>
                 </div>
                 <p className="text-xs text-white/80 mt-0.5">
-                  High-stakes transfer of <strong>{activeHold.heldAmount || '₹50,00,000'}</strong> intercepted. Requires independent secondary device authorization.
+                  {activeHold.heldAmount && activeHold.heldAmount !== 'HIGH TRANSACTION ALERT' ? (
+                    <>High-stakes transfer of <strong>{activeHold.heldAmount}</strong> intercepted. Requires independent secondary device authorization.</>
+                  ) : (
+                    <>High-stakes transfer (<strong className="text-amber-300">HIGH TRANSACTION ALERT</strong>) intercepted. Requires independent secondary device authorization.</>
+                  )}
                 </p>
               </div>
             </div>
@@ -551,7 +549,6 @@ const CallSession = () => {
         )}
       </AnimatePresence>
 
-      {/* Bottom Floating Control Bar (Only rendered during active call when scrolling) */}
       {isCallActive && (
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#070b10] via-[#070b10]/95 to-transparent pt-8 z-40 flex justify-center pointer-events-none">
           <div className="inline-flex items-center gap-3 p-2 px-3 sm:px-4 rounded-full bg-[#0B1523]/95 shadow-2xl border border-amber-500/30 backdrop-blur-2xl pointer-events-auto">
@@ -575,7 +572,6 @@ const CallSession = () => {
         </div>
       )}
 
-      {/* ─── Ending Call & Auto Report Generation Overlay ─── */}
       <AnimatePresence>
         {isEndingCall && (
           <motion.div

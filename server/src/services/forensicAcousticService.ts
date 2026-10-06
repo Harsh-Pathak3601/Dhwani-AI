@@ -32,17 +32,13 @@ const MODULATE_WS_BASE = process.env.MODULATE_WS_BASE || 'wss://platform.modulat
  * Checks if Modulate Velma API Key is configured in environment
  */
 export function isModulateConfigured(): boolean {
-  return Boolean(process.env.MODULATE_API_KEY && process.env.MODULATE_API_KEY.trim() !== '');
+  const key = process.env.FORENSIC_API_KEY || process.env.MODULATE_API_KEY;
+  return Boolean(key && key.trim() !== '');
 }
 
-/**
- * ─────────────────────────────────────────────────────────────────────────────
- * 1. Velma-2 Synthetic Voice Detection (Batch REST API)
- * Endpoint: POST /api/velma-2-synthetic-voice-detection-batch
- * Headers: X-API-Key: <key>
- * Body: multipart/form-data (upload_file)
- * ─────────────────────────────────────────────────────────────────────────────
- */
+export const isForensicAcousticConfigured = isModulateConfigured;
+
+
 export async function detectSyntheticVoiceBatch(
   audioBuffer: Buffer,
   filename: string = 'sample.wav',
@@ -100,7 +96,7 @@ export async function detectSyntheticVoiceBatch(
 
   const durationMs = Number(data.duration_ms || 0);
   const avgConfidence = syntheticCount > 0 ? totalConfidence / syntheticCount : 0;
-  
+
   let overallVerdict: 'synthetic' | 'non-synthetic' | 'inconclusive' = 'non-synthetic';
   if (syntheticCount > 0 && maxConf >= 0.65) {
     overallVerdict = 'synthetic';
@@ -119,14 +115,7 @@ export async function detectSyntheticVoiceBatch(
   };
 }
 
-/**
- * ─────────────────────────────────────────────────────────────────────────────
- * 2. Velma-2 Synthetic Voice Detection (Streaming WebSocket API)
- * Endpoint: wss://platform.modulate.ai/api/velma-2-synthetic-voice-detection-streaming
- * Auth: Query param ?api_key=<key>
- * Audio chunks: Binary PCM / audio stream
- * ─────────────────────────────────────────────────────────────────────────────
- */
+
 export function createVelmaStreamingSession(
   sessionId: string,
   onVerdict: (verdict: VelmaFrameVerdict) => void,
@@ -262,3 +251,11 @@ export function createVelmaStreamingSession(
     isConnected: () => connected && ws !== null && ws.readyState === WebSocket.OPEN,
   };
 }
+
+// Forensic Acoustic export aliases for full compatibility
+export type ForensicAcousticFrameVerdict = VelmaFrameVerdict;
+export type ForensicAcousticBatchResponse = VelmaBatchResponse;
+export type ForensicAcousticStreamingSession = VelmaStreamingSession;
+export const createForensicAcousticStreamingSession = createVelmaStreamingSession;
+
+

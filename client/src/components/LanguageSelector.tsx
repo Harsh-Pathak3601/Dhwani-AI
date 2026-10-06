@@ -50,7 +50,6 @@ export default function LanguageSelector({ variant = 'navbar', className = '' }:
 
   return (
     <div className={`relative inline-block text-left ${className}`} ref={containerRef}>
-      {/* Trigger Button */}
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
@@ -82,7 +81,6 @@ export default function LanguageSelector({ variant = 'navbar', className = '' }:
         />
       </button>
 
-      {/* Dropdown Menu */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -92,7 +90,7 @@ export default function LanguageSelector({ variant = 'navbar', className = '' }:
             transition={{ duration: 0.15 }}
             className="absolute right-0 mt-2 w-64 sm:w-72 rounded-2xl bg-[#09101A]/95 border border-white/15 shadow-[0_20px_50px_rgba(0,0,0,0.85)] backdrop-blur-2xl p-2 z-50 text-left notranslate"
           >
-            {/* Language Options List */}
+
             <div className="max-h-72 overflow-y-auto space-y-1 pr-1 scrollbar-thin scrollbar-thumb-white/20">
               {INDIAN_ACCENTS.map((lang: AccentLanguage) => {
                 const isSelected = lang.code === activeCode;
