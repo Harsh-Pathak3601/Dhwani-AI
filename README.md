@@ -13,8 +13,6 @@
 [![Deepgram Nova-2](https://img.shields.io/badge/Deepgram-Nova--2-13EF95?style=for-the-badge&logo=deepgram&logoColor=black)](https://deepgram.com/)
 [![Groq LPU](https://img.shields.io/badge/Groq-Ultra--Fast_LLM-F55036?style=for-the-badge&logo=groq&logoColor=white)](https://groq.com/)
 [![Acoustic ML](https://img.shields.io/badge/Acoustic_ML-16--D_Neural_MLP-6C5CE7?style=for-the-badge)](https://scikit-learn.org/)
-[![Forensic Stream](https://img.shields.io/badge/Forensic_Acoustics-Streaming_WS-FF6B6B?style=for-the-badge)](https://platform.modulate.ai/)
-[![Tests Passing](https://img.shields.io/badge/Vitest-38%2F38_Passed-2ED573?style=for-the-badge&logo=vitest&logoColor=white)](https://vitest.dev/)
 [![License: ISC](https://img.shields.io/badge/License-ISC-blue?style=for-the-badge)](https://opensource.org/licenses/ISC)
 
 <p align="center">
