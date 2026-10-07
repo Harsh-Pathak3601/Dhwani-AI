@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { HiOutlineArrowDown } from 'react-icons/hi2';
 import {
   TbCpu,
@@ -7,7 +6,6 @@ import {
   TbShieldLock,
   TbBinaryTree,
   TbDatabase,
-  TbArrowRight,
   TbCheck,
   TbFingerprint,
   TbBroadcast,
@@ -1055,17 +1053,7 @@ export default function ArchitectureView() {
         </div>
       </div>
 
-    
-      <div className="text-center pt-4">
-        <Link
-          to="/app"
-          className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full text-xs sm:text-sm font-bold text-slate-950 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-400 hover:opacity-95 shadow-xl shadow-orange-500/25 transition-all hover:scale-105 cursor-pointer font-brand"
-        >
-          <TbShieldCheck className="w-4 h-4 text-slate-950" />
-          <span>Launch Real-Time Call Scanner &amp; Defense</span>
-          <TbArrowRight className="w-4 h-4 text-slate-950" />
-        </Link>
-      </div>
+
 
     </div>
   );

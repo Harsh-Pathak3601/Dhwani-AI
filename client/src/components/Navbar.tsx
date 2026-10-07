@@ -176,10 +176,6 @@ export default function Navbar() {
                 </Link>
               );
             })}
-            <div className="pt-2.5 mt-2 border-t border-white/[0.08] flex items-center justify-between px-2">
-              <span className="text-[11px] font-mono text-white/50">Language:</span>
-              <LanguageSelector variant="navbar" />
-            </div>
           </motion.div>
         )}
       </AnimatePresence>

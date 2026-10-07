@@ -13,7 +13,7 @@ import {
   TbPlayerPlay,
   TbKey,
   TbClock,
-  TbSparkles,
+  TbPackage,
   TbFileCode,
   TbBolt,
   TbRefresh,
@@ -994,7 +994,7 @@ message VerificationVerdict {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-5">
           <div className="space-y-1">
             <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-400">
-              <TbSparkles className="w-4 h-4 text-amber-400" />
+              <TbPackage className="w-4 h-4 text-amber-400" />
               <span>Embeddable Client SDK</span>
             </div>
             <h2 className="text-2xl font-bold font-brand tracking-tight text-white">
