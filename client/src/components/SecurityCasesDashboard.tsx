@@ -2,15 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, Variants } from 'framer-motion';
 import {
   Search, Download, FileText, Eye, Shield, ShieldCheck, ShieldAlert,
-  ArrowLeft, Users, Loader2, Database, FileDown,
-  AlertTriangle, Activity
+  ArrowLeft, FileDown, AlertTriangle, Activity
 } from 'lucide-react';
-import { useRole, roleLabels, UserRole } from '../context/RoleContext';
-import { fetchReports, seedDemoData, SecurityCase, ReportsResponse } from '../services/api';
+import { useRole } from '../context/RoleContext';
+import { fetchReports, SecurityCase, ReportsResponse } from '../services/api';
 import { exportToPDF, exportToCSV, exportToHTML, ExportableReport } from '../services/reportExport';
-import InvestigationPanel from './InvestigationPanel';
-
-type StatusFilter = '' | 'Needs Review' | 'Verified' | 'Suspected';
 
 const statusBadge = (status: string) => {
   switch (status) {
@@ -48,43 +44,25 @@ const toExportable = (c: SecurityCase): ExportableReport => ({
 });
 
 const SecurityCasesDashboard = () => {
-  const { currentRole, setCurrentRole } = useRole();
-  const [activeFilter, setActiveFilter] = useState<StatusFilter>('');
+  const { currentRole } = useRole();
   const [searchQuery, setSearchQuery] = useState('');
   const [data, setData] = useState<ReportsResponse>({
     reports: [], counts: { total: 0, needsReview: 0, suspected: 0, verified: 0 }, page: 1, totalPages: 1
   });
   const [loading, setLoading] = useState(true);
-  const [seeding, setSeeding] = useState(false);
   const [selectedCase, setSelectedCase] = useState<SecurityCase | null>(null);
 
   const loadReports = useCallback(async () => {
     setLoading(true);
     const result = await fetchReports({
-      status: activeFilter || undefined,
       role: currentRole,
       search: searchQuery || undefined,
     });
     setData(result);
     setLoading(false);
-  }, [activeFilter, currentRole, searchQuery]);
+  }, [currentRole, searchQuery]);
 
   useEffect(() => { loadReports(); }, [loadReports]);
-
-  const handleSeedDemo = async () => {
-    setSeeding(true);
-    await seedDemoData();
-    await loadReports();
-    setSeeding(false);
-  };
-
-  const handleCaseUpdate = (updated: SecurityCase) => {
-    setData(prev => ({
-      ...prev,
-      reports: prev.reports.map(r => r._id === updated._id ? updated : r),
-    }));
-    if (selectedCase?._id === updated._id) setSelectedCase(updated);
-  };
 
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
@@ -94,13 +72,6 @@ const SecurityCasesDashboard = () => {
     hidden: { opacity: 0, y: 16 },
     show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
   };
-
-  const filterTabs: { label: string; value: StatusFilter; count: number }[] = [
-    { label: 'All', value: '', count: data.counts.total },
-    { label: 'Needs Review', value: 'Needs Review', count: data.counts.needsReview },
-    { label: 'Verified', value: 'Verified', count: data.counts.verified },
-    { label: 'Suspected', value: 'Suspected', count: data.counts.suspected },
-  ];
 
   // ── CASE DETAIL VIEW ──
   if (selectedCase) {
@@ -201,16 +172,7 @@ const SecurityCasesDashboard = () => {
               </motion.div>
             )}
 
-            {/* Investigation Panel */}
-            <motion.div variants={itemVariants}>
-              <InvestigationPanel
-                reportId={selectedCase._id}
-                currentStatus={selectedCase.investigationStatus}
-                currentNotes={selectedCase.investigatorNotes || ''}
-                currentReviewer={selectedCase.reviewedBy}
-                onUpdate={handleCaseUpdate}
-              />
-            </motion.div>
+
 
             {/* Export Buttons */}
             <motion.div variants={itemVariants} className="flex gap-3 pt-4">
@@ -250,56 +212,27 @@ const SecurityCasesDashboard = () => {
         className="relative z-10 w-full max-w-full min-w-0"
       >
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-2 sm:mt-6 mb-5 sm:mb-8 w-full">
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-amber-500/10 rounded-2xl p-1.5 flex items-center justify-center border border-amber-500/30 shadow-[0_0_30px_rgba(255,109,0,0.25)] overflow-hidden backdrop-blur-md shrink-0">
-              <img
-                src="/Dhwani_AI_transparent_512x512.png"
-                alt="Dhwani AI"
-                className="w-full h-full object-contain drop-shadow-[0_2px_8px_rgba(255,109,0,0.5)]"
-              />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Security Cases</h1>
-                <span className="font-brand text-[10px] sm:text-[11px] font-black uppercase tracking-wider px-2 sm:px-2.5 py-0.5 rounded-full bg-amber-500/15 text-white border border-amber-500/30" style={{ fontFamily: "'Outfit', sans-serif" }}>
-                  Dhwani AI
-                </span>
-              </div>
-              <p className="text-white/40 text-xs sm:text-sm">Investigation &amp; Triage Dashboard</p>
-            </div>
+        <div className="flex items-center gap-3 sm:gap-4 mt-2 sm:mt-6 mb-5 sm:mb-8 w-full">
+          <div className="w-12 h-12 sm:w-14 sm:h-14 bg-amber-500/10 rounded-2xl p-1.5 flex items-center justify-center border border-amber-500/30 shadow-[0_0_30px_rgba(255,109,0,0.25)] overflow-hidden backdrop-blur-md shrink-0">
+            <img
+              src="/Dhwani_AI_transparent_512x512.png"
+              alt="Dhwani AI"
+              className="w-full h-full object-contain drop-shadow-[0_2px_8px_rgba(255,109,0,0.5)]"
+            />
           </div>
-          <div className="flex items-center justify-between sm:justify-end gap-2.5 sm:gap-3 w-full sm:w-auto">
-            {/* Role Switcher */}
-            <div className="relative flex-1 sm:flex-initial">
-              <div className="flex items-center gap-1.5 text-white/50 text-[11px] sm:text-xs mb-1">
-                <Users className="w-3 h-3" /> Viewing as
-              </div>
-              <select
-                value={currentRole}
-                onChange={(e) => setCurrentRole(e.target.value as UserRole)}
-                className="w-full sm:w-auto bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-xs sm:text-sm text-white appearance-none cursor-pointer focus:outline-none focus:border-amber-500/50 pr-8"
-                style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='rgba(255,255,255,0.5)' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E\")", backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center' }}
-              >
-                {(Object.entries(roleLabels) as [UserRole, string][]).map(([value, label]) => (
-                  <option key={value} value={value} className="bg-[#132238] text-white">{label}</option>
-                ))}
-              </select>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Security Cases</h1>
+              <span className="font-brand text-[10px] sm:text-[11px] font-black uppercase tracking-wider px-2 sm:px-2.5 py-0.5 rounded-full bg-amber-500/15 text-white border border-amber-500/30" style={{ fontFamily: "'Outfit', sans-serif" }}>
+                Dhwani AI
+              </span>
             </div>
-            {/* Seed Demo */}
-            <button
-              onClick={handleSeedDemo}
-              disabled={seeding}
-              className="py-2 px-3 sm:px-4 glass-card hover:bg-white/10 rounded-xl text-xs sm:text-sm font-medium transition-all flex items-center gap-1.5 sm:gap-2 text-white/70 mt-5 shrink-0 cursor-pointer"
-            >
-              {seeding ? <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin" /> : <Database className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
-              <span>{seeding ? 'Seeding...' : 'Seed Demo'}</span>
-            </button>
+            <p className="text-white/40 text-xs sm:text-sm">Forensic Incidents &amp; Threat Intelligence</p>
           </div>
         </div>
 
         {/* Search Bar */}
-        <div className="relative mb-4 sm:mb-6 w-full max-w-full">
+        <div className="relative mb-5 sm:mb-6 w-full max-w-full">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
           <input
             type="text"
@@ -308,26 +241,6 @@ const SecurityCasesDashboard = () => {
             placeholder="Search by caller number..."
             className="w-full bg-white/5 border border-white/10 rounded-xl pl-11 pr-4 py-2.5 sm:py-3 text-xs sm:text-sm text-white placeholder-white/30 focus:outline-none focus:border-amber-500/50 transition-colors"
           />
-        </div>
-
-        {/* Filter Tabs */}
-        <div className="flex gap-2 mb-5 sm:mb-6 overflow-x-auto pb-2 w-full max-w-full min-w-0 scrollbar-none [-ms-overflow-style:none] [scrollbar-width:none]">
-          {filterTabs.map((tab) => (
-            <button
-              key={tab.value}
-              onClick={() => setActiveFilter(tab.value)}
-              className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2 shrink-0 ${activeFilter === tab.value
-                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm shadow-orange-500/20'
-                  : 'text-white/50 hover:text-white/70 hover:bg-white/5 border border-transparent'
-                }`}
-            >
-              {tab.label}
-              <span className={`text-[11px] sm:text-xs px-1.5 py-0.5 rounded-full ${activeFilter === tab.value ? 'bg-amber-500/30 text-amber-300' : 'bg-white/10 text-white/40'
-                }`}>
-                {tab.count}
-              </span>
-            </button>
-          ))}
         </div>
 
         {/* Cases List */}
@@ -364,7 +277,7 @@ const SecurityCasesDashboard = () => {
           <div className="flex flex-col items-center justify-center py-20 glass-card w-full">
             <Shield className="w-12 h-12 text-white/20 mb-4" />
             <p className="text-white/50 text-sm mb-2">No security cases found</p>
-            <p className="text-white/30 text-xs">Click "Seed Demo" to generate sample data for testing</p>
+            <p className="text-white/30 text-xs">Recorded forensic incidents will appear here</p>
           </div>
         ) : (
           <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-3 w-full max-w-full min-w-0">
