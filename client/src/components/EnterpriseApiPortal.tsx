@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import {
   TbCode,
   TbBuildingBank,
@@ -129,11 +130,14 @@ export default function EnterpriseApiPortal() {
       if (res.ok) {
         const data = await res.json();
         setApiResponse(data);
+        toast.success('Simulation executed via live gateway endpoint');
       } else {
         simulateLocalResponse();
+        toast.info('Simulated gateway execution completed');
       }
     } catch {
       simulateLocalResponse();
+      toast.info('Simulated gateway execution completed');
     } finally {
       setIsExecuting(false);
     }
@@ -215,6 +219,7 @@ export default function EnterpriseApiPortal() {
       const prefix = selectedScope.split(':')[0];
       setGeneratedKey(`dhwani_live_sec_${prefix}_${rand}`);
       setIsGeneratingKey(false);
+      toast.success('New production API key generated');
     }, 300);
   };
 
@@ -222,12 +227,15 @@ export default function EnterpriseApiPortal() {
     navigator.clipboard.writeText(text);
     if (type === 'key') {
       setCopiedKey(true);
+      toast.success('API key copied to clipboard');
       setTimeout(() => setCopiedKey(false), 2000);
     } else if (type === 'code') {
       setCopiedCode(true);
+      toast.info('Integration snippet copied to clipboard');
       setTimeout(() => setCopiedCode(false), 2000);
     } else if (type === 'proto') {
       setCopiedProto(true);
+      toast.info('Protobuf schema copied to clipboard');
       setTimeout(() => setCopiedProto(false), 2000);
     }
   };

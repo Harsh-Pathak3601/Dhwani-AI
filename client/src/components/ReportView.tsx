@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, Variants } from 'framer-motion';
+import { toast } from 'sonner';
 import {
   ShieldAlert,
   FileDown,
@@ -62,6 +63,7 @@ const ReportView = () => {
   const handleCopyFIR = () => {
     navigator.clipboard.writeText(report.formalComplaintText);
     setCopied(true);
+    toast.success('FIR complaint text copied to clipboard');
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -70,11 +72,18 @@ const ReportView = () => {
     // PDF Generation: execute synchronously on user click to ensure browser allows download
     try {
       generatePDFReport(report);
+      toast.success('Forensic PDF report generated and downloaded');
     } catch (err) {
       console.error('Error generating PDF:', err);
+      toast.error('Failed to generate PDF report');
     }
 
-    await reportToCommunityDB(report.callerNumber, report.peakRiskScore);
+    try {
+      await reportToCommunityDB(report.callerNumber, report.peakRiskScore);
+      toast.info('Incident recorded in Community Risk Registry');
+    } catch (err) {
+      console.error('Error reporting to community:', err);
+    }
     setTimeout(() => setIsReporting(false), 1500);
   };
 
@@ -426,6 +435,7 @@ const ReportView = () => {
                 sessionId: report.sessionId,
               };
               exportToHTML(exportable);
+              toast.success('Forensic HTML report exported');
             }}
             className="flex-1 py-3 px-4 glass-card hover:bg-white/10 rounded-xl font-medium transition-all flex items-center justify-center gap-2 text-xs sm:text-sm text-white/80 active:scale-[0.98]"
           >
@@ -450,6 +460,7 @@ const ReportView = () => {
                 sessionId: report.sessionId,
               };
               exportToCSV([exportable]);
+              toast.success('Case CSV record downloaded');
             }}
             className="flex-1 py-3 px-4 glass-card hover:bg-white/10 rounded-xl font-medium transition-all flex items-center justify-center gap-2 text-xs sm:text-sm text-white/80 active:scale-[0.98]"
           >

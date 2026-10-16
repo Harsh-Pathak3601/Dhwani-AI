@@ -14,6 +14,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import { RoleProvider } from './context/RoleContext';
 import { syncRouteTranslation, getSavedLanguageCode } from './i18n/googleTranslate';
+import { Toaster } from 'sonner';
 
 const pageVariants: Variants = {
   initial: {
@@ -204,6 +205,21 @@ function Layout() {
         </div>
         {!isCockpit && <Footer />}
       </div>
+      <Toaster
+        theme="dark"
+        position="top-right"
+        richColors
+        closeButton
+        toastOptions={{
+          style: {
+            background: 'rgba(13, 27, 42, 0.95)',
+            backdropFilter: 'blur(16px)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
+            color: '#f8fafc',
+            boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.7)',
+          },
+        }}
+      />
     </div>
   );
 }

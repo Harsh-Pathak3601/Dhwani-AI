@@ -1,6 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Globe, Check, ChevronDown } from 'lucide-react';
+import { toast } from 'sonner';
 import { INDIAN_ACCENTS, AccentLanguage, applyFullPageTranslation, getSavedLanguageCode } from '../i18n/googleTranslate';
 import { useSessionStore } from '../store/useSessionStore';
 
@@ -43,6 +44,7 @@ export default function LanguageSelector({ variant = 'navbar', className = '' }:
     setSpeechLanguage(accent.speechCode);
     setIsOpen(false);
     setIsTranslating(true);
+    toast.info(`Language set to ${accent.name} (${accent.nativeName})`);
     setTimeout(() => setIsTranslating(false), 900);
     // Apply full-page DOM translation
     applyFullPageTranslation(accent.code);

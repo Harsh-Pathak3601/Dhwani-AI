@@ -1,5 +1,6 @@
 import { useState, useCallback, type ReactNode } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import {
   Mic,
   ShieldCheck,
@@ -52,7 +53,11 @@ const ConsentBanner = () => {
   const navigate = useNavigate();
 
   const handleConfirm = useCallback(() => {
-    if (!agreed) return;
+    if (!agreed) {
+      toast.error('Please accept data processing terms to continue');
+      return;
+    }
+    toast.success('Monitoring session authorized under DPDP Act 2023 guidelines');
     navigate('/session');
   }, [agreed, navigate]);
 

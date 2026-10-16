@@ -35,7 +35,7 @@ export default function Navbar() {
     { key: 'nav.cockpit', name: 'Cockpit', path: '/session', icon: TbWaveSine },
     { key: 'nav.cases', name: 'Cases', path: '/dashboard', icon: TbLayoutDashboard },
     { key: 'nav.architecture', name: 'Architecture', path: '/architecture', icon: TbBinaryTree },
-    { key: 'nav.enterprise', name: 'Enterprise API', path: '/enterprise-api', icon: TbCode },
+    { key: 'nav.enterprise', name: 'API', path: '/enterprise-api', icon: TbCode },
     { key: 'nav.privacy', name: 'Privacy', path: '/consent', icon: HiOutlineLockClosed },
   ];
 

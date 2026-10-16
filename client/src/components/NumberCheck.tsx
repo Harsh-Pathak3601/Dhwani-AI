@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, type ReactNode, type FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import { useSessionStore } from '../store/useSessionStore';
 import { checkCommunityDB } from '../services/api';
 import {
@@ -89,7 +90,10 @@ const NumberCheck = () => {
   const handleCheck = useCallback(
     async (e: FormEvent) => {
       e.preventDefault();
-      if (!isValidNumber) return;
+      if (!isValidNumber) {
+        toast.error('Please enter a valid phone number (at least 10 digits)');
+        return;
+      }
 
       setLoading(true);
       try {

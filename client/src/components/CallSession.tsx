@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 import { PhoneOff, Phone, Wifi, WifiOff, Loader2, Languages, FileAudio, Smartphone, ShieldAlert } from 'lucide-react';
 import { useSession } from '../hooks/useSession';
 import { useSessionStore } from '../store/useSessionStore';
@@ -185,6 +186,7 @@ const CallSession = () => {
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    toast.info(`Forensic audio file "${file.name}" loaded`);
     setDisplayCardData(null);
     setCardDismissedId(null);
     setDismissedPhases(new Set());
@@ -195,6 +197,7 @@ const CallSession = () => {
       await callbacksRef.current.startFileSession(file);
     } catch (err) {
       console.error('Error starting file session:', err);
+      toast.error('Failed to analyze uploaded audio file');
     }
   }, [resetSessionState]);
 
@@ -247,6 +250,7 @@ const CallSession = () => {
   useEffect(() => {
     if (reportResult) {
       setIsEndingCall(false);
+      toast.success('Forensic call analysis completed');
       if (reportResult.report) {
         navigate('/report', { state: { report: reportResult.report } });
       } else if (reportResult.safe) {
@@ -257,6 +261,12 @@ const CallSession = () => {
       }
     }
   }, [reportResult, navigate, createFallbackReport]);
+
+  useEffect(() => {
+    if (permissionError) {
+      toast.error(permissionError || 'Microphone access denied. Please allow audio access in your browser.');
+    }
+  }, [permissionError]);
 
   useEffect(() => {
     let timeout: NodeJS.Timeout;

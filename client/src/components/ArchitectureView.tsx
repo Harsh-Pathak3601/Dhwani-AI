@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { HiOutlineArrowDown } from 'react-icons/hi2';
 import {
   TbCpu,
@@ -319,6 +320,7 @@ export default function ArchitectureView() {
   const handleCopyPayload = (payload: any) => {
     navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
     setCopiedPayload(true);
+    toast.success('Architecture payload copied to clipboard');
     setTimeout(() => setCopiedPayload(false), 2000);
   };
 

@@ -7,6 +7,7 @@ import {
 import { useRole } from '../context/RoleContext';
 import { fetchReports, SecurityCase, ReportsResponse } from '../services/api';
 import { exportToPDF, exportToCSV, exportToHTML, ExportableReport } from '../services/reportExport';
+import { toast } from 'sonner';
 
 const statusBadge = (status: string) => {
   switch (status) {
@@ -177,19 +178,40 @@ const SecurityCasesDashboard = () => {
             {/* Export Buttons */}
             <motion.div variants={itemVariants} className="flex gap-3 pt-4">
               <button
-                onClick={() => exportToPDF(toExportable(selectedCase))}
+                onClick={() => {
+                  try {
+                    exportToPDF(toExportable(selectedCase));
+                    toast.success('Case dossier exported as PDF');
+                  } catch {
+                    toast.error('Failed to export PDF');
+                  }
+                }}
                 className="flex-1 py-3 px-4 glass-card hover:bg-white/10 rounded-xl font-medium transition-all flex items-center justify-center gap-2 text-sm text-white/80"
               >
                 <FileDown className="w-4 h-4" /> Export PDF
               </button>
               <button
-                onClick={() => exportToCSV([toExportable(selectedCase)])}
+                onClick={() => {
+                  try {
+                    exportToCSV([toExportable(selectedCase)]);
+                    toast.success('Case dossier exported as CSV');
+                  } catch {
+                    toast.error('Failed to export CSV');
+                  }
+                }}
                 className="flex-1 py-3 px-4 glass-card hover:bg-white/10 rounded-xl font-medium transition-all flex items-center justify-center gap-2 text-sm text-white/80"
               >
                 <FileText className="w-4 h-4" /> Export CSV
               </button>
               <button
-                onClick={() => exportToHTML(toExportable(selectedCase))}
+                onClick={() => {
+                  try {
+                    exportToHTML(toExportable(selectedCase));
+                    toast.success('Case dossier exported as HTML');
+                  } catch {
+                    toast.error('Failed to export HTML');
+                  }
+                }}
                 className="flex-1 py-3 px-4 glass-card hover:bg-white/10 rounded-xl font-medium transition-all flex items-center justify-center gap-2 text-sm text-white/80"
               >
                 <Download className="w-4 h-4" /> Export HTML
