@@ -840,9 +840,9 @@ message VerificationVerdict {
           </div>
 
           {/* Right: Live Response & Policy Decision */}
-          <div className="lg:col-span-7 space-y-3 flex flex-col">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+          <div className="lg:col-span-7 space-y-3 flex flex-col min-w-0">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-xs font-mono font-bold text-white/70">
                   REAL-TIME GATEWAY RESPONSE
                 </span>
@@ -850,52 +850,38 @@ message VerificationVerdict {
                   HTTP 200 OK
                 </span>
               </div>
-              <div className="text-[11px] font-mono text-white/50 flex items-center gap-2">
+              <div className="text-[11px] font-mono text-white/50 flex items-center gap-2 shrink-0">
                 <TbClock className="w-3.5 h-3.5 text-amber-400" />
                 <span>{apiResponse?.executionTimeMs || 34}ms Latency</span>
               </div>
             </div>
 
             {/* Verdict summary banner */}
-            <div className={`p-4 rounded-xl border flex items-center justify-between gap-4 ${
+            <div className={`p-3.5 sm:p-4 rounded-xl border flex items-center gap-3 min-w-0 ${
               (apiResponse?.status === 'TRANSACTION_INTERCEPTED_ON_HOLD' || apiResponse?.verdict?.state === 'ACTIVE_HOLD' || apiResponse?.signalingVerdict?.recommendedSipResponse === 486)
                 ? 'bg-rose-500/15 border-rose-500/40 text-rose-200'
                 : 'bg-emerald-500/15 border-emerald-500/40 text-emerald-200'
             }`}>
-              <div className="flex items-center gap-3">
-                <div className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold ${
-                  (apiResponse?.status === 'TRANSACTION_INTERCEPTED_ON_HOLD' || apiResponse?.verdict?.state === 'ACTIVE_HOLD' || apiResponse?.signalingVerdict?.recommendedSipResponse === 486)
-                    ? 'bg-rose-500/20 text-rose-300'
-                    : 'bg-emerald-500/20 text-emerald-300'
-                }`}>
-                  {(apiResponse?.status === 'TRANSACTION_INTERCEPTED_ON_HOLD' || apiResponse?.verdict?.state === 'ACTIVE_HOLD' || apiResponse?.signalingVerdict?.recommendedSipResponse === 486)
-                    ? <HiOutlineExclamationTriangle className="w-5 h-5 text-rose-400" />
-                    : <HiOutlineCheckCircle className="w-5 h-5 text-emerald-400" />
-                  }
-                </div>
-                <div>
-                  <div className="text-xs font-bold font-mono uppercase tracking-wider">
-                    {apiResponse?.status || apiResponse?.verdict?.action || 'GATEWAY_VERDICT_CERTIFIED'}
-                  </div>
-                  <div className="text-xs opacity-80">
-                    Voice Authenticity Score (VAS):{' '}
-                    <strong className="text-white">
-                      {apiResponse?.voiceBiometrics?.vasScore ?? apiResponse?.verdict?.voiceAuthenticityScore ?? apiResponse?.signalingVerdict?.vasScore ?? 16}/100
-                    </strong>
-                  </div>
-                </div>
+              <div className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold shrink-0 ${
+                (apiResponse?.status === 'TRANSACTION_INTERCEPTED_ON_HOLD' || apiResponse?.verdict?.state === 'ACTIVE_HOLD' || apiResponse?.signalingVerdict?.recommendedSipResponse === 486)
+                  ? 'bg-rose-500/20 text-rose-300'
+                  : 'bg-emerald-500/20 text-emerald-300'
+              }`}>
+                {(apiResponse?.status === 'TRANSACTION_INTERCEPTED_ON_HOLD' || apiResponse?.verdict?.state === 'ACTIVE_HOLD' || apiResponse?.signalingVerdict?.recommendedSipResponse === 486)
+                  ? <HiOutlineExclamationTriangle className="w-5 h-5 text-rose-400" />
+                  : <HiOutlineCheckCircle className="w-5 h-5 text-emerald-400" />
+                }
               </div>
-
-              <div className="text-right shrink-0">
-                <span className={`text-[10px] font-mono px-2.5 py-1 rounded-full border uppercase font-bold ${
-                  (apiResponse?.status === 'TRANSACTION_INTERCEPTED_ON_HOLD' || apiResponse?.verdict?.state === 'ACTIVE_HOLD' || apiResponse?.signalingVerdict?.recommendedSipResponse === 486)
-                    ? 'bg-rose-500/20 border-rose-500/40 text-rose-300'
-                    : 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-                }`}>
-                  {(apiResponse?.status === 'TRANSACTION_INTERCEPTED_ON_HOLD' || apiResponse?.verdict?.state === 'ACTIVE_HOLD' || apiResponse?.signalingVerdict?.recommendedSipResponse === 486)
-                    ? 'AUTOMATIC ACTIVE HOLD'
-                    : 'DIRECT PASS-THROUGH'}
-                </span>
+              <div className="min-w-0 flex-1">
+                <div className="text-[11px] sm:text-xs font-bold font-mono uppercase tracking-wider break-all">
+                  {apiResponse?.status || apiResponse?.verdict?.action || 'GATEWAY_VERDICT_CERTIFIED'}
+                </div>
+                <div className="text-[11px] sm:text-xs opacity-80 truncate sm:whitespace-normal">
+                  Voice Authenticity Score (VAS):{' '}
+                  <strong className="text-white">
+                    {apiResponse?.voiceBiometrics?.vasScore ?? apiResponse?.verdict?.voiceAuthenticityScore ?? apiResponse?.signalingVerdict?.vasScore ?? 16}/100
+                  </strong>
+                </div>
               </div>
             </div>
 

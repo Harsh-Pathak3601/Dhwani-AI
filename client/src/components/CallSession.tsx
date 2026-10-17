@@ -345,47 +345,70 @@ const CallSession = () => {
       {/* Main Cockpit Container */}
       <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-6 flex-1 flex flex-col">
         {/* Unified Command Bar Header */}
-        <div className="glass-card flex flex-col md:flex-row items-center justify-between p-3.5 sm:p-4 mb-5 border-white/10 gap-4 rounded-2xl w-full">
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            <div className="w-11 h-11 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center overflow-hidden p-1 shadow-sm shrink-0">
-              <img
-                src="/Dhwani_AI_transparent_512x512.png"
-                alt="Dhwani AI"
-                className="w-full h-full object-contain drop-shadow-[0_1px_4px_rgba(255,109,0,0.5)]"
-              />
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="font-brand text-xs uppercase tracking-wider text-white font-black" style={{ fontFamily: "'Outfit', sans-serif" }}>Dhwani AI Cockpit</span>
-                <span className="text-[10px] text-white/30">•</span>
-                <p className="text-[10px] uppercase tracking-wider text-white/50 font-semibold">
-                  {isCallActive ? 'Monitoring Call' : 'Call Standby'}
-                </p>
+        <div className="glass-card flex flex-col md:flex-row md:items-center justify-between p-3.5 sm:p-4 mb-5 border-white/10 gap-3.5 sm:gap-4 rounded-2xl w-full">
+          {/* Header Info & Mobile-Only Status Timer */}
+          <div className="flex items-center justify-between w-full md:w-auto gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center overflow-hidden p-1 shadow-sm shrink-0">
+                <img
+                  src="/Dhwani_AI_transparent_512x512.png"
+                  alt="Dhwani AI"
+                  className="w-full h-full object-contain drop-shadow-[0_1px_4px_rgba(255,109,0,0.5)]"
+                />
               </div>
-              <span className="font-mono text-base sm:text-lg font-bold text-white tracking-wide truncate block">{callerNumber || 'Unknown Caller'}</span>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="font-brand text-xs uppercase tracking-wider text-white font-black" style={{ fontFamily: "'Outfit', sans-serif" }}>Dhwani AI Cockpit</span>
+                  <span className="text-[10px] text-white/30">•</span>
+                  <p className="text-[10px] uppercase tracking-wider text-white/50 font-semibold">
+                    {isCallActive ? 'Monitoring Call' : 'Call Standby'}
+                  </p>
+                </div>
+                <span className="font-mono text-base sm:text-lg font-bold text-white tracking-wide truncate block">{callerNumber || 'Unknown Caller'}</span>
+              </div>
+            </div>
+
+            {/* Mobile-only Standby / Live Indicator & Timer (Top Right) */}
+            <div className="flex md:hidden text-right flex-col items-end shrink-0 pl-2.5 py-0.5 border-l border-white/10">
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <span className="relative flex h-2 w-2">
+                  {isCallActive ? (
+                    <>
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                    </>
+                  ) : (
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-white/40"></span>
+                  )}
+                </span>
+                <span className={`text-[10px] uppercase font-bold tracking-widest ${isCallActive ? 'text-primary' : 'text-white/50'}`}>
+                  {isCallActive ? 'LIVE TAP' : 'STANDBY'}
+                </span>
+              </div>
+              <span className="font-mono text-xs sm:text-sm text-white/70 font-semibold">{formatTime(seconds)}</span>
             </div>
           </div>
 
           {/* Unified Controls (Live Mic + Test File OR End Call) & Status */}
-          <div className="flex items-center gap-3 sm:gap-4 w-full md:w-auto justify-between md:justify-end flex-wrap">
+          <div className="flex items-center gap-2.5 sm:gap-4 w-full md:w-auto justify-end">
             {!isCallActive ? (
-              <div className="flex items-center gap-2.5">
+              <div className="grid grid-cols-2 gap-2.5 w-full sm:w-auto sm:flex sm:items-center">
                 <motion.button
                   whileTap={{ scale: 0.94 }}
                   onClick={handleStartCall}
                   aria-label="Start call"
                   data-testid="start-call-button"
-                  className="px-5 h-10 rounded-full flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-400 hover:opacity-95 text-slate-950 font-black text-xs sm:text-sm shadow-[0_0_20px_rgba(255,109,0,0.4)] transition-all cursor-pointer whitespace-nowrap"
+                  className="w-full sm:w-auto px-4 sm:px-5 h-10 rounded-full flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-400 hover:opacity-95 text-slate-950 font-black text-xs sm:text-sm shadow-[0_0_20px_rgba(255,109,0,0.4)] transition-all cursor-pointer whitespace-nowrap"
                 >
-                  <Phone className="w-4 h-4 fill-current" />
+                  <Phone className="w-4 h-4 fill-current shrink-0" />
                   <span className="font-semibold tracking-wide">Live Mic</span>
                 </motion.button>
 
                 <label
-                  className="px-4 h-10 rounded-full flex items-center justify-center gap-2 bg-white/10 hover:bg-white/15 border border-amber-500/30 text-white font-medium text-xs sm:text-sm shadow-md transition-all cursor-pointer whitespace-nowrap"
+                  className="w-full sm:w-auto px-4 h-10 rounded-full flex items-center justify-center gap-2 bg-white/10 hover:bg-white/15 border border-amber-500/30 text-white font-medium text-xs sm:text-sm shadow-md transition-all cursor-pointer whitespace-nowrap"
                   title="Select an audio or video file (e.g., MP4, MP3, WAV) to test voice authenticity"
                 >
-                  <FileAudio className="w-4 h-4 text-amber-400" />
+                  <FileAudio className="w-4 h-4 text-amber-400 shrink-0" />
                   <span className="font-semibold">Test File</span>
                   <input
                     type="file"
@@ -396,8 +419,8 @@ const CallSession = () => {
                 </label>
               </div>
             ) : (
-              <div className="flex items-center gap-3">
-                <div className="w-20 px-1 hidden sm:block">
+              <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+                <div className="flex-1 sm:w-20 px-1 flex items-center justify-center">
                   <VolumeMonitor isRecording={isRecording && isCallActive} />
                 </div>
                 <motion.button
@@ -405,20 +428,20 @@ const CallSession = () => {
                   onClick={handleEndCall}
                   aria-label="End call"
                   data-testid="end-call-button"
-                  className={`px-5 h-10 rounded-full flex items-center justify-center gap-2 text-white font-bold text-xs sm:text-sm shadow-lg transition-all cursor-pointer whitespace-nowrap ${
+                  className={`flex-1 sm:flex-none px-5 h-10 rounded-full flex items-center justify-center gap-2 text-white font-bold text-xs sm:text-sm shadow-lg transition-all cursor-pointer whitespace-nowrap ${
                     voiceRiskState.state === 'Critical'
                       ? 'bg-danger shadow-[0_0_20px_rgba(226,75,74,0.6)] animate-pulse'
                       : 'bg-red-600 hover:bg-red-500 border border-red-500/50 shadow-md shadow-red-500/20'
                   }`}
                 >
-                  <PhoneOff className="w-4 h-4" />
+                  <PhoneOff className="w-4 h-4 shrink-0" />
                   <span>End Call</span>
                 </motion.button>
               </div>
             )}
 
-            {/* Standby / Live Indicator & Timer */}
-            <div className="text-right flex flex-col items-end shrink-0 pl-3 border-l border-white/10">
+            {/* Desktop-only Standby / Live Indicator & Timer */}
+            <div className="hidden md:flex text-right flex-col items-end shrink-0 pl-3 border-l border-white/10">
               <div className="flex items-center gap-1.5 mb-0.5">
                 <span className="relative flex h-2 w-2">
                   {isCallActive ? (
