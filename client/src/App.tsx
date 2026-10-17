@@ -15,6 +15,7 @@ import Footer from './components/Footer';
 import { RoleProvider } from './context/RoleContext';
 import { syncRouteTranslation, getSavedLanguageCode } from './i18n/googleTranslate';
 import { Toaster } from 'sonner';
+import { Analytics } from '@vercel/analytics/react';
 
 const pageVariants: Variants = {
   initial: {
@@ -229,6 +230,7 @@ function App() {
     <RoleProvider>
       <Router>
         <Layout />
+        <Analytics />
       </Router>
     </RoleProvider>
   );

@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@deepgram/sdk": "^5.5.0",
+    "@vercel/analytics": "^2.0.1",
     "axios": "^1.18.1",
     "framer-motion": "^12.41.0",
     "jspdf": "^4.2.1",
