@@ -141,13 +141,13 @@ describe('CallSession', () => {
     });
     renderComponent();
 
-    expect(screen.getByText('00:00')).toBeInTheDocument();
+    expect(screen.getAllByText('00:00')[0]).toBeInTheDocument();
 
     act(() => {
       vi.advanceTimersByTime(2000);
     });
 
-    expect(screen.getByText('00:02')).toBeInTheDocument();
+    expect(screen.getAllByText('00:02')[0]).toBeInTheDocument();
   });
 
   it('shows coaching card when risk >= 40', () => {

@@ -346,7 +346,6 @@ const CallSession = () => {
       <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-6 flex-1 flex flex-col">
         {/* Unified Command Bar Header */}
         <div className="glass-card flex flex-col md:flex-row md:items-center justify-between p-3.5 sm:p-4 mb-5 border-white/10 gap-3.5 sm:gap-4 rounded-2xl w-full">
-          {/* Header Info & Mobile-Only Status Timer */}
           <div className="flex items-center justify-between w-full md:w-auto gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center overflow-hidden p-1 shadow-sm shrink-0">
@@ -517,7 +516,6 @@ const CallSession = () => {
             </div>
           </div>
 
-          {/* Right Column: Coaching Alert Cards + Compact Mel Spectrogram + Live Speech-to-Text Transcript Feed */}
           <div className="lg:col-span-5 flex flex-col gap-3.5 h-full">
             {/* 5-State Voice Integrity Alert / Coaching Card */}
             <AnimatePresence>

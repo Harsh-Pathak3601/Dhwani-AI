@@ -9,15 +9,10 @@ import {
   ArrowRight,
   AlertTriangle,
   Cpu,
-  FileText,
   Shield,
   Loader2,
-  Sparkles,
-  Lock,
-  Zap,
   Activity,
   CheckCircle2,
-  Users
 } from 'lucide-react';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 import MobileDeviceFrame from './MobileDeviceFrame';
