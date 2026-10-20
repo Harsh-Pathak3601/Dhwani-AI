@@ -87,9 +87,9 @@ const TranscriptFeed: React.FC<TranscriptFeedProps> = ({
               </span>
             </div>
 
-            <h3 className="text-base font-bold text-white tracking-tight flex items-center justify-center gap-1.5">
-              <User className="w-3.5 h-3.5 text-amber-400" />
-              <span>{displayCallerNumber}</span>
+            <h3 className="text-base font-bold text-white tracking-tight flex items-center justify-center gap-1.5 min-w-0 px-2">
+              <User className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span className="truncate max-w-[240px] sm:max-w-[280px]" title={displayCallerNumber}>{displayCallerNumber}</span>
             </h3>
 
             <p className="text-[11px] font-mono text-amber-400/90 font-medium mt-0.5">
