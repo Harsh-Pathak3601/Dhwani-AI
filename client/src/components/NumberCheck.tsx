@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, type ReactNode, type FormEvent } from 'react';
+import { useState, useCallback, useMemo, type FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useSessionStore } from '../store/useSessionStore';
@@ -17,6 +17,7 @@ import {
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 import MobileDeviceFrame from './MobileDeviceFrame';
 import StarBorder from './StarBorder';
+// import TextLoop from './TextLoop';
 
 /* ─── Floating Particles Background ─── */
 interface Particle {
@@ -419,6 +420,33 @@ const NumberCheck = () => {
               </MobileDeviceFrame>
             </motion.div>
           </div>
+
+          {/* Dynamic Wave Ribbon Slogan Banner */}
+          {/* <motion.div
+            variants={itemVariants}
+            className="w-full overflow-hidden my-0 py-0"
+          >
+            <TextLoop
+              text="Don't trust the voice ✦ Verify the action"
+              shape="wave"
+              speed={60}
+              direction="forward"
+              separator="✦"
+              curviness={24}
+              fontSize={21}
+              fontWeight={800}
+              letterSpacing={2.5}
+              uppercase
+              ribbon={true}
+              ribbonColor="rgba(42, 29, 8, 0.85)"
+              ribbonWidth={52}
+              viewHeight={95}
+              color="#fcd34d"
+              edgeFade={0.55}
+              pauseOnHover={true}
+              draggable={true}
+            />
+          </motion.div> */}
 
           {/* Lower Feature Grid (Proper Website Layout) */}
           <div className="pt-10 border-t border-white/[0.08]">

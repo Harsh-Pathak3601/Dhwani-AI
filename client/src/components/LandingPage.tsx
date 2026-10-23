@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import StarBorder from './StarBorder';
+import TextLoop from './TextLoop';
 import './LandingPage.css';
 
 export default function LandingPage() {
@@ -88,6 +89,30 @@ export default function LandingPage() {
             <div className="flow-arrow">&rarr;</div>
             <div className="flow-step">PROTECT</div>
           </div>
+        </div>
+
+        {/* Dynamic Wave Ribbon Slogan Banner */}
+        <div className="w-full overflow-hidden my-0 py-0 absolute bottom-2 left-0 right-0 z-10 pointer-events-auto">
+          <TextLoop
+            text="Don't trust the voice ✦ Verify the action"
+            shape="wave"
+            speed={60}
+            direction="forward"
+            separator="✦"
+            curviness={24}
+            fontSize={21}
+            fontWeight={800}
+            letterSpacing={2.5}
+            uppercase
+            ribbon={true}
+            ribbonColor="rgba(42, 29, 8, 0.85)"
+            ribbonWidth={52}
+            viewHeight={95}
+            color="#fcd34d"
+            edgeFade={0.55}
+            pauseOnHover={true}
+            draggable={true}
+          />
         </div>
 
         <button

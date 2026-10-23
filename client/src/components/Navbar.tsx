@@ -1,17 +1,14 @@
-import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useState, useEffect, useMemo } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // React Icons
 import {
   HiOutlineHome,
-  HiOutlinePhone,
   HiOutlineLockClosed,
   HiOutlineBars3,
   HiOutlineXMark,
-  HiOutlineShieldCheck,
   HiOutlineChevronRight,
-  // HiOutlineArrowDownTray
 } from 'react-icons/hi2';
 import {
   TbWaveSine,
@@ -21,23 +18,50 @@ import {
 } from 'react-icons/tb';
 import LanguageSelector from './LanguageSelector';
 import { useTranslation } from '../i18n/useTranslation';
+import GooeyNav from './GooeyNav';
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const location = useLocation();
+  const navigate = useNavigate();
   const { t } = useTranslation();
 
-  const navLinks = [
-    { key: 'nav.home', name: 'Home', path: '/', icon: HiOutlineHome },
-    // { key: 'nav.download', name: 'Download', path: '/download', icon: HiOutlineArrowDownTray },
-    { key: 'nav.cockpit', name: 'Cockpit', path: '/session', icon: TbWaveSine },
-    { key: 'nav.cases', name: 'Cases', path: '/dashboard', icon: TbLayoutDashboard },
-    { key: 'nav.architecture', name: 'Architecture', path: '/architecture', icon: TbBinaryTree },
-    { key: 'nav.enterprise', name: 'API', path: '/enterprise-api', icon: TbCode },
-    { key: 'nav.privacy', name: 'Privacy', path: '/consent', icon: HiOutlineLockClosed },
-  ];
+  const navLinks = useMemo(
+    () => [
+      { key: 'nav.home', name: 'Home', path: '/', icon: HiOutlineHome },
+      // { key: 'nav.download', name: 'Download', path: '/download', icon: HiOutlineArrowDownTray },
+      { key: 'nav.cockpit', name: 'Cockpit', path: '/session', icon: TbWaveSine },
+      { key: 'nav.cases', name: 'Cases', path: '/dashboard', icon: TbLayoutDashboard },
+      { key: 'nav.architecture', name: 'Architecture', path: '/architecture', icon: TbBinaryTree },
+      { key: 'nav.enterprise', name: 'API', path: '/enterprise-api', icon: TbCode },
+      { key: 'nav.privacy', name: 'Privacy', path: '/consent', icon: HiOutlineLockClosed },
+    ],
+    []
+  );
+
+  const isActive = (path: string) => {
+    if (path === '/') return location.pathname === '/' || location.pathname === '/app' || location.pathname === '/check';
+    if (path !== '/' && location.pathname.startsWith(path)) return true;
+    return false;
+  };
+
+  const activeIndex = useMemo(() => {
+    const idx = navLinks.findIndex((link) => isActive(link.path));
+    return idx >= 0 ? idx : 0;
+  }, [location.pathname, navLinks]);
+
+  const gooeyItems = useMemo(() => {
+    return navLinks.map((link) => {
+      const Icon = link.icon;
+      return {
+        label: t(link.key, link.name),
+        href: link.path,
+        icon: <Icon className="w-3.5 h-3.5 shrink-0" />
+      };
+    });
+  }, [t, navLinks]);
 
   // Smart Scroll: Hide on scroll down, show immediately on scroll up
   useEffect(() => {
@@ -64,12 +88,6 @@ export default function Navbar() {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY]);
-
-  const isActive = (path: string) => {
-    if (path === '/') return location.pathname === '/' || location.pathname === '/app' || location.pathname === '/check';
-    if (path !== '/' && location.pathname.startsWith(path)) return true;
-    return false;
-  };
 
   const isCockpit = location.pathname.startsWith('/session');
 
@@ -104,27 +122,31 @@ export default function Navbar() {
           </div>
         </Link>
 
-        {/* Desktop Single-Line Navigation Pills */}
-        <nav className="hidden md:flex items-center gap-0.5 bg-black/40 p-0.5 rounded-full border border-white/5">
-          {navLinks.map((link) => {
-            const active = isActive(link.path);
-            const Icon = link.icon;
-            const label = t(link.key, link.name);
-            return (
-              <Link
-                key={link.path}
-                to={link.path}
-                className={`px-2 lg:px-2.5 py-1 rounded-full text-[11px] lg:text-xs font-medium tracking-normal transition-all duration-150 flex items-center gap-1.5 whitespace-nowrap ${active
-                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-[0_0_12px_rgba(255,109,0,0.3)]'
-                  : 'text-white/65 hover:text-white hover:bg-white/[0.06]'
-                  }`}
-              >
-                <Icon className={`w-3.5 h-3.5 shrink-0 ${active ? 'text-amber-400' : 'text-white/50'}`} />
-                <span>{label}</span>
-              </Link>
-            );
-          })}
-        </nav>
+        {/* Desktop Single-Line Navigation with GooeyNav */}
+        <div className="hidden md:flex items-center notranslate">
+          <GooeyNav
+            items={gooeyItems}
+            activeIndex={activeIndex}
+            theme="dark"
+            size="sm"
+            frame={false}
+            color="#342408"
+            activeTextColor="#fcd34d"
+            colors={['#fcd34d', '#f0c948', '#e2ac20', '#78350f']}
+            particleCount={14}
+            spread={52}
+            animationTime={540}
+            timeVariance={220}
+            gooeyness={0.52}
+            wobble={0.45}
+            hoverEffect={true}
+            onChange={(_index, item) => {
+              if (item.href && item.href !== location.pathname) {
+                navigate(item.href);
+              }
+            }}
+          />
+        </div>
 
         {/* Desktop Language Dropdown (Replaced REST/gRPC Gateway) */}
         <div className="hidden md:flex items-center gap-2 shrink-0 notranslate">
