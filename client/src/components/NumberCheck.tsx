@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 import MobileDeviceFrame from './MobileDeviceFrame';
+import StarBorder from './StarBorder';
 
 /* ─── Floating Particles Background ─── */
 interface Particle {
@@ -184,14 +185,31 @@ const NumberCheck = () => {
 
               {/* Action Buttons */}
               <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 sm:gap-4 pt-4 w-full">
-                <Link
+                <StarBorder
+                  as={Link}
                   to="/session"
-                  className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl font-bold text-sm tracking-wide bg-white text-gray-900 shadow-xl shadow-white/10 hover:bg-amber-100 hover:shadow-[0_0_20px_rgba(255,171,0,0.35)] hover:scale-[1.02] active:scale-[0.98] transition-all"
                   id="try-dhwani-ai-btn"
+                  color="#fbbf24"
+                  trailColor="#f59e0b"
+                  duration={3.5}
+                  direction="clockwise"
+                  stars={1}
+                  trailLength={0.35}
+                  thickness={1.5}
+                  radius={12}
+                  glow={0.9}
+                  hover="lap"
+                  sparkle={true}
+                  clickPulse
+                  theme="dark"
+                  backgroundColor="rgba(255, 255, 255, 0.09)"
+                  textColor="#ffffff"
+                  borderColor="rgba(245, 158, 11, 0.3)"
+                  className="font-bold text-sm tracking-wide shadow-[0_8px_32px_rgba(0,0,0,0.36),0_0_20px_rgba(245,158,11,0.25)] hover:bg-white/[0.16] hover:shadow-[0_0_30px_rgba(245,158,11,0.5)] hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
                 >
-                  <span>Try Dhwani AI</span>
-                  <span className="text-base font-semibold">&rarr;</span>
-                </Link>
+                  <span className="text-white font-bold tracking-wide">Try Dhwani AI</span>
+                  <span className="text-base font-semibold text-amber-400">&rarr;</span>
+                </StarBorder>
 
                 <a
                   href="https://drive.google.com/drive/folders/1FW-ac9awRK2J0J1oe7HMyBwVmvjSl6MC"

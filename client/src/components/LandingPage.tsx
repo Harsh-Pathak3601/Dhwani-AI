@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import StarBorder from './StarBorder';
 import './LandingPage.css';
 
 export default function LandingPage() {
@@ -32,9 +33,31 @@ export default function LandingPage() {
           </p>
 
           <div className="hero-buttons">
-            <Link to="/app" className="btn btn-primary" id="try-dhwani-ai-btn">
-              Try Dhwani AI &rarr;
-            </Link>
+            <StarBorder
+              as={Link}
+              to="/app"
+              id="try-dhwani-ai-btn"
+              color="#fbbf24"
+              trailColor="#f59e0b"
+              duration={3.5}
+              direction="clockwise"
+              stars={1}
+              trailLength={0.35}
+              thickness={1.5}
+              radius={14}
+              glow={0.9}
+              hover="lap"
+              sparkle={true}
+              clickPulse
+              theme="dark"
+              backgroundColor="rgba(255, 255, 255, 0.09)"
+              textColor="#ffffff"
+              borderColor="rgba(245, 158, 11, 0.3)"
+              className="btn font-bold text-white shadow-[0_8px_32px_rgba(0,0,0,0.36),0_0_20px_rgba(245,158,11,0.25)] hover:bg-white/[0.16] hover:shadow-[0_0_30px_rgba(245,158,11,0.5)] hover:scale-[1.02] active:scale-[0.98] transition-all"
+            >
+              <span>Try Dhwani AI</span>
+              <span className="text-amber-400 font-semibold">&rarr;</span>
+            </StarBorder>
             <a
               href="https://drive.google.com/drive/folders/1FW-ac9awRK2J0J1oe7HMyBwVmvjSl6MC"
               target="_blank"
