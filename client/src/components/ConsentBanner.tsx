@@ -154,6 +154,8 @@ const ConsentBanner = () => {
                     <img
                       src="/Dhwani_AI_transparent_512x512.png"
                       alt="Dhwani AI Shield"
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-contain"
                     />
                   </div>

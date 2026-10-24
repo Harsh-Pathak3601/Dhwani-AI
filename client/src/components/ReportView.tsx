@@ -125,6 +125,8 @@ const ReportView = () => {
             <img
               src="/Dhwani_AI_transparent_512x512.png"
               alt="Dhwani AI"
+              loading="lazy"
+              decoding="async"
               className="w-full h-full object-contain drop-shadow-[0_2px_10px_rgba(255,109,0,0.5)]"
             />
           </div>

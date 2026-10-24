@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { useRole } from '../context/RoleContext';
 import { fetchReports, SecurityCase, ReportsResponse } from '../services/api';
-import { exportToPDF, exportToCSV, exportToHTML, ExportableReport } from '../services/reportExport';
+import { exportToCSV, exportToHTML, ExportableReport } from '../services/reportExport';
 import { toast } from 'sonner';
 
 const statusBadge = (status: string) => {
@@ -178,8 +178,9 @@ const SecurityCasesDashboard = () => {
             {/* Export Buttons */}
             <motion.div variants={itemVariants} className="flex gap-3 pt-4">
               <button
-                onClick={() => {
+                onClick={async () => {
                   try {
+                    const { exportToPDF } = await import('../services/reportExport');
                     exportToPDF(toExportable(selectedCase));
                     toast.success('Case dossier exported as PDF');
                   } catch {
@@ -239,6 +240,8 @@ const SecurityCasesDashboard = () => {
             <img
               src="/Dhwani_AI_transparent_512x512.png"
               alt="Dhwani AI"
+              loading="lazy"
+              decoding="async"
               className="w-full h-full object-contain drop-shadow-[0_2px_8px_rgba(255,109,0,0.5)]"
             />
           </div>

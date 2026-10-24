@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useSessionStore } from '../store/useSessionStore';
 import { checkCommunityDB } from '../services/api';
+import { prefetchRoute } from '../App';
 import {
   ShieldCheck,
   Phone,
@@ -32,11 +33,11 @@ interface Particle {
 function ParticlesBackground() {
   const particles: Particle[] = useMemo(
     () =>
-      Array.from({ length: 22 }, (_, i) => ({
+      Array.from({ length: 12 }, (_, i) => ({
         id: i,
         x: Math.random() * 100,
         y: Math.random() * 100,
-        size: Math.random() * 4 + 2,
+        size: Math.random() * 3 + 2,
         duration: Math.random() * 8 + 6,
         delay: Math.random() * 4,
       })),
@@ -54,6 +55,7 @@ function ParticlesBackground() {
             height: p.size,
             left: `${p.x}%`,
             top: `${p.y}%`,
+            willChange: 'transform, opacity',
           }}
           animate={{
             y: [0, -40, 0],
@@ -348,6 +350,8 @@ const NumberCheck = () => {
                         <button
                           type="submit"
                           onClick={handleCheck}
+                          onMouseEnter={() => prefetchRoute('/consent')}
+                          onFocus={() => prefetchRoute('/consent')}
                           disabled={loading || !isValidNumber}
                           className={`w-full py-3.5 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 cursor-pointer ${isValidNumber && !loading
                             ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-400 text-slate-950 font-black shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 hover:opacity-95'
@@ -378,6 +382,7 @@ const NumberCheck = () => {
                           role="option"
                           tabIndex={0}
                           aria-selected="false"
+                          onMouseEnter={() => prefetchRoute('/consent')}
                           onClick={() => setPresetNumber('+91 98765 43210')}
                           onKeyDown={(e) => e.key === 'Enter' && setPresetNumber('+91 98765 43210')}
                           className="px-2.5 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-[11px] text-white/80 transition-all flex items-center justify-between cursor-pointer text-left"
@@ -392,6 +397,7 @@ const NumberCheck = () => {
                           role="option"
                           tabIndex={0}
                           aria-selected="false"
+                          onMouseEnter={() => prefetchRoute('/consent')}
                           onClick={() => setPresetNumber('+91 91234 56789')}
                           onKeyDown={(e) => e.key === 'Enter' && setPresetNumber('+91 91234 56789')}
                           className="px-2.5 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-[11px] text-white/80 transition-all flex items-center justify-between cursor-pointer text-left"

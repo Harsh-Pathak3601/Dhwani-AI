@@ -158,6 +158,8 @@ export default function DownloadView() {
             <img
               src="/Dhwani_AI_transparent_512x512.png"
               alt="Dhwani Shield"
+              loading="lazy"
+              decoding="async"
               className="w-full h-full object-contain"
             />
           </div>
@@ -321,6 +323,8 @@ export default function DownloadView() {
                     <img
                       src={APP_SCREENSHOTS.home}
                       alt="Dhwani AI App Home Screen"
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -330,7 +334,13 @@ export default function DownloadView() {
                       <div className="flex items-center justify-between border-b border-white/[0.08] pb-3 pt-1">
                         <div className="flex items-center gap-2">
                           <div className="w-7 h-7 rounded-lg bg-orange-500/20 border border-orange-500/40 p-1 flex items-center justify-center">
-                            <img src="/Dhwani_AI_transparent_512x512.png" alt="Dhwani" className="w-full h-full object-contain" />
+                            <img
+                              src="/Dhwani_AI_transparent_512x512.png"
+                              alt="Dhwani"
+                              loading="lazy"
+                              decoding="async"
+                              className="w-full h-full object-contain"
+                            />
                           </div>
                           <span className="text-xs font-bold text-white font-brand">Dhwani AI Sentinel</span>
                         </div>

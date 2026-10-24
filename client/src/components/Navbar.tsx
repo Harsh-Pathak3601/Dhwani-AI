@@ -19,6 +19,7 @@ import {
 import LanguageSelector from './LanguageSelector';
 import { useTranslation } from '../i18n/useTranslation';
 import GooeyNav from './GooeyNav';
+import { prefetchRoute } from '../App';
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -104,11 +105,17 @@ export default function Navbar() {
         } px-3 sm:px-4 h-12 flex items-center justify-between pointer-events-auto transition-all`}>
 
         {/* Brand Logo */}
-        <Link to="/" className="flex items-center gap-2 group shrink-0 pr-1 notranslate">
+        <Link
+          to="/"
+          onMouseEnter={() => prefetchRoute('/')}
+          className="flex items-center gap-2 group shrink-0 pr-1 notranslate"
+        >
           <div className="relative w-7 h-7 flex items-center justify-center group-hover:scale-105 transition-transform drop-shadow-[0_2px_8px_rgba(255,109,0,0.4)]">
             <img
               src="/Dhwani_AI_transparent_512x512.png"
               alt="Dhwani AI Logo"
+              loading="lazy"
+              decoding="async"
               className="w-full h-full object-contain"
             />
           </div>
@@ -123,7 +130,14 @@ export default function Navbar() {
         </Link>
 
         {/* Desktop Single-Line Navigation with GooeyNav */}
-        <div className="hidden md:flex items-center notranslate">
+        <div
+          className="hidden md:flex items-center notranslate"
+          onMouseEnter={() => {
+            // Idle prefetch most visited routes on navbar hover
+            prefetchRoute('/session');
+            prefetchRoute('/dashboard');
+          }}
+        >
           <GooeyNav
             items={gooeyItems}
             activeIndex={activeIndex}
@@ -142,6 +156,7 @@ export default function Navbar() {
             hoverEffect={true}
             onChange={(_index, item) => {
               if (item.href && item.href !== location.pathname) {
+                prefetchRoute(item.href);
                 navigate(item.href);
               }
             }}
@@ -184,6 +199,7 @@ export default function Navbar() {
                 <Link
                   key={link.path}
                   to={link.path}
+                  onMouseEnter={() => prefetchRoute(link.path)}
                   onClick={() => setMobileMenuOpen(false)}
                   className={`w-full px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between transition-colors ${active
                     ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'

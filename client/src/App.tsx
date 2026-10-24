@@ -1,17 +1,46 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion, Variants } from 'framer-motion';
 import type { ReactNode } from 'react';
-import NumberCheck from './components/NumberCheck';
-import ConsentBanner from './components/ConsentBanner';
-import CallSession from './components/CallSession';
-import ReportView from './components/ReportView';
-import SecurityCasesDashboard from './components/SecurityCasesDashboard';
-import ArchitectureView from './components/ArchitectureView';
-import EnterpriseApiPortal from './components/EnterpriseApiPortal';
-// import DownloadView from './components/DownloadView';
+
+// Lazy Loads
+const NumberCheck = lazy(() => import('./components/NumberCheck'));
+const ConsentBanner = lazy(() => import('./components/ConsentBanner'));
+const CallSession = lazy(() => import('./components/CallSession'));
+const ReportView = lazy(() => import('./components/ReportView'));
+const SecurityCasesDashboard = lazy(() => import('./components/SecurityCasesDashboard'));
+const ArchitectureView = lazy(() => import('./components/ArchitectureView'));
+const EnterpriseApiPortal = lazy(() => import('./components/EnterpriseApiPortal'));
+// const DownloadView = lazy(() => import('./components/DownloadView'));
+
+// Prefetch triggers for zero-lag navigation when hovering links
+export const prefetchRoute = (path: string) => {
+  switch (path) {
+    case '/session':
+      return import('./components/CallSession');
+    case '/dashboard':
+      return import('./components/SecurityCasesDashboard');
+    case '/architecture':
+      return import('./components/ArchitectureView');
+    case '/enterprise-api':
+    case '/integrations':
+      return import('./components/EnterpriseApiPortal');
+    case '/consent':
+      return import('./components/ConsentBanner');
+    case '/report':
+      return import('./components/ReportView');
+    case '/':
+    case '/app':
+    case '/check':
+      return import('./components/NumberCheck');
+    default:
+      return Promise.resolve();
+  }
+};
+
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import PageLoader from './components/PageLoader';
 import { RoleProvider } from './context/RoleContext';
 import { syncRouteTranslation, getSavedLanguageCode } from './i18n/googleTranslate';
 import { Toaster } from 'sonner';
@@ -65,7 +94,9 @@ function PageWrapper({ children }: { children: ReactNode }) {
       exit="exit"
       className="min-h-dvh w-full max-w-full min-w-0"
     >
-      {children}
+      <Suspense fallback={<PageLoader />}>
+        {children}
+      </Suspense>
     </motion.div>
   );
 }

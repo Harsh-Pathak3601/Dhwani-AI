@@ -132,16 +132,31 @@
 
   <script>
     const canvas = document.getElementById('webgl-canvas');
-    const gl = canvas.getContext('webgl');
+    const gl = canvas.getContext('webgl', {
+      powerPreference: 'low-power',
+      alpha: true,
+      antialias: false,
+      depth: false,
+      stencil: false
+    });
 
     if (gl) {
+      let isVisible = !document.hidden;
+      document.addEventListener('visibilitychange', () => {
+        isVisible = !document.hidden;
+      });
+
       const resizeCanvas = () => {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        // Cap canvas internal resolution to max 960x540 for massive GPU performance gain
+        const maxW = 960;
+        const maxH = 540;
+        const scale = Math.min(1, maxW / Math.max(window.innerWidth, 1), maxH / Math.max(window.innerHeight, 1));
+        canvas.width = Math.max(320, Math.floor(window.innerWidth * scale));
+        canvas.height = Math.max(180, Math.floor(window.innerHeight * scale));
         gl.viewport(0, 0, canvas.width, canvas.height);
       };
 
-      window.addEventListener('resize', resizeCanvas);
+      window.addEventListener('resize', resizeCanvas, { passive: true });
       resizeCanvas();
 
       const vertexShaderSource = `
@@ -220,16 +235,22 @@
 
       const timeLocation = gl.getUniformLocation(program, 'u_time');
       const resolutionLocation = gl.getUniformLocation(program, 'u_resolution');
-      const startTime = performance.now();
+      let lastFrameTime = 0;
+      const targetFPS = 30;
+      const frameInterval = 1000 / targetFPS;
 
-      const render = () => {
-        gl.uniform1f(timeLocation, (performance.now() - startTime) / 1000);
+      const render = (now) => {
+        requestAnimationFrame(render);
+        if (!isVisible) return;
+        if (now - lastFrameTime < frameInterval) return;
+        lastFrameTime = now;
+
+        gl.uniform1f(timeLocation, (now - startTime) / 1000);
         gl.uniform2f(resolutionLocation, canvas.width, canvas.height);
         gl.drawArrays(gl.TRIANGLES, 0, 6);
-        requestAnimationFrame(render);
       };
 
-      render();
+      requestAnimationFrame(render);
     }
 
     gsap.set('#bg-orange-bottom, #bg-darkorange-bottom', { xPercent: -100, yPercent: 100 });
