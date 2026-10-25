@@ -40,6 +40,7 @@ export const prefetchRoute = (path: string) => {
 
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import BackToTop from './components/BackToTop';
 import PageLoader from './components/PageLoader';
 import { RoleProvider } from './context/RoleContext';
 import { syncRouteTranslation, getSavedLanguageCode } from './i18n/googleTranslate';
@@ -215,6 +216,11 @@ function Layout() {
   const location = useLocation();
   const isCockpit = location.pathname.startsWith('/session');
 
+  // Ensure fresh page view starts at the top on route transitions
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
   return (
     <div className="flex flex-col min-h-screen bg-[#0D1B2A] text-white relative w-full max-w-full overflow-x-hidden">
       <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden bg-black max-w-full">
@@ -237,6 +243,7 @@ function Layout() {
         </div>
         {!isCockpit && <Footer />}
       </div>
+      {!isCockpit && <BackToTop />}
       <Toaster
         theme="dark"
         position="top-right"

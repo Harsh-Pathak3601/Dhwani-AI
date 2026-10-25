@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import StarBorder from './StarBorder';
-import TextLoop from './TextLoop';
+// import TextLoop from './TextLoop'; will implement later!!
 import './LandingPage.css';
 
 export default function LandingPage() {
@@ -92,7 +92,7 @@ export default function LandingPage() {
         </div>
 
         {/* Dynamic Wave Ribbon Slogan Banner */}
-        <div className="w-full overflow-hidden my-0 py-0 absolute bottom-2 left-0 right-0 z-10 pointer-events-auto">
+        {/* <div className="w-full overflow-hidden my-0 py-0 absolute bottom-2 left-0 right-0 z-10 pointer-events-auto">
           <TextLoop
             text="Don't trust the voice ✦ Verify the action"
             shape="wave"
@@ -113,7 +113,7 @@ export default function LandingPage() {
             pauseOnHover={true}
             draggable={true}
           />
-        </div>
+        </div> */}
 
         <button
           id="mute-toggle"
