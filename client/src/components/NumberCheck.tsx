@@ -18,6 +18,7 @@ import {
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 import MobileDeviceFrame from './MobileDeviceFrame';
 import StarBorder from './StarBorder';
+import ShinyText from './ShinyText';
 // import TextLoop from './TextLoop';
 
 /* ─── Floating Particles Background ─── */
@@ -158,15 +159,30 @@ const NumberCheck = () => {
             {/* Left Hero & Details (7 cols) */}
             <motion.div variants={itemVariants} className="lg:col-span-7 space-y-6 text-center lg:text-left flex flex-col items-center lg:items-start">
 
-              <span className="font-kaushan text-amber-400 tracking-widest text-xs sm:text-sm uppercase font-semibold block drop-shadow-[0_0_12px_rgba(255,171,0,0.35)]">
-                AI-POWERED VOICE SECURITY
+              <span className="font-kaushan tracking-widest text-xs sm:text-sm uppercase font-semibold block drop-shadow-[0_0_12px_rgba(255,171,0,0.35)]">
+                <ShinyText
+                  text="AI-POWERED VOICE SECURITY"
+                  color="#fbbf24"
+                  shineColor="#ffffff"
+                  speed={2.6}
+                  delay={0.8}
+                  glow={0.25}
+                />
               </span>
 
               <h1 className="text-2xl sm:text-4xl lg:text-5xl font-black font-brand-display tracking-tight leading-snug sm:leading-[1.15] break-words">
                 Real-time AI Defense<br />
-                <span className="font-serif italic font-normal text-3xl sm:text-5xl lg:text-6xl bg-gradient-to-r from-orange-400 via-amber-300 to-yellow-300 bg-clip-text text-transparent tracking-wide inline-block drop-shadow-[0_2px_18px_rgba(255,109,0,0.35)]">
-                  Against Voice Scams
-                </span>
+                <ShinyText
+                  text="Against Voice Scams"
+                  color="#f59e0b"
+                  shineColor="#fef08a"
+                  speed={2.8}
+                  delay={0.8}
+                  shineWidth={45}
+                  softness={0.7}
+                  glow={0.3}
+                  className="font-serif italic font-normal text-3xl sm:text-5xl lg:text-6xl tracking-wide inline-block drop-shadow-[0_2px_18px_rgba(255,109,0,0.35)]"
+                />
               </h1>
 
               <p className="font-satisfy text-xl sm:text-2xl text-amber-200/90 font-normal tracking-wide drop-shadow-[0_0_8px_rgba(255,171,0,0.25)]">
@@ -175,7 +191,16 @@ const NumberCheck = () => {
 
               {/* Compact Protection Flow */}
               <div className="flex flex-wrap items-center justify-center lg:justify-start gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-semibold tracking-wider text-white/80 py-1">
-                <span className="px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/35 shadow-[0_0_10px_rgba(255,171,0,0.2)]">DETECT VOICE</span>
+                <span className="px-2.5 py-1 rounded-md bg-amber-500/20 border border-amber-500/35 shadow-[0_0_10px_rgba(255,171,0,0.2)]">
+                  <ShinyText
+                    text="DETECT VOICE"
+                    color="#fcd34d"
+                    shineColor="#ffffff"
+                    speed={2}
+                    delay={1.2}
+                    glow={0.2}
+                  />
+                </span>
                 <span className="text-white/40">&rarr;</span>
                 <span className="px-2.5 py-1 rounded-md bg-white/[0.04] text-white/70 border border-white/10">SCORE</span>
                 <span className="text-white/40">&rarr;</span>
@@ -183,7 +208,16 @@ const NumberCheck = () => {
                 <span className="text-white/40">&rarr;</span>
                 <span className="px-2.5 py-1 rounded-md bg-white/[0.04] text-white/70 border border-white/10">VERIFY</span>
                 <span className="text-white/40">&rarr;</span>
-                <span className="px-2.5 py-1 rounded-md bg-orange-500/25 text-orange-300 border border-orange-500/40 shadow-[0_0_12px_rgba(255,109,0,0.3)]">PROTECT</span>
+                <span className="px-2.5 py-1 rounded-md bg-orange-500/25 border border-orange-500/40 shadow-[0_0_12px_rgba(255,109,0,0.3)]">
+                  <ShinyText
+                    text="PROTECT"
+                    color="#fdba74"
+                    shineColor="#ffffff"
+                    speed={2}
+                    delay={1.5}
+                    glow={0.25}
+                  />
+                </span>
               </div>
 
               {/* Action Buttons */}

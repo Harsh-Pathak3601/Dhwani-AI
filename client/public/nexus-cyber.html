@@ -235,6 +235,7 @@
 
       const timeLocation = gl.getUniformLocation(program, 'u_time');
       const resolutionLocation = gl.getUniformLocation(program, 'u_resolution');
+      const startTime = performance.now();
       let lastFrameTime = 0;
       const targetFPS = 30;
       const frameInterval = 1000 / targetFPS;

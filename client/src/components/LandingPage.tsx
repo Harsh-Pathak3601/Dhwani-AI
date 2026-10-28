@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import StarBorder from './StarBorder';
+import ShinyText from './ShinyText';
 // import TextLoop from './TextLoop'; will implement later!!
 import './LandingPage.css';
 
@@ -22,12 +23,29 @@ export default function LandingPage() {
 
         {/* Hero Content */}
         <div className="hero-content">
-          <span className="hero-eyebrow font-kaushan text-emerald-400 tracking-widest text-sm">
-            AI-POWERED VOICE SECURITY
+          <span className="hero-eyebrow font-kaushan tracking-widest text-sm">
+            <ShinyText
+              text="AI-POWERED VOICE SECURITY"
+              color="#34d399"
+              shineColor="#ffffff"
+              speed={2.6}
+              delay={0.8}
+              glow={0.3}
+            />
           </span>
           <h1 className="hero-headline">
             Real-time AI Defense<br />
-            <span className="font-serif italic font-normal text-cyan-300 tracking-wide">Against Voice Scams</span>
+            <ShinyText
+              text="Against Voice Scams"
+              color="#67e8f9"
+              shineColor="#ffffff"
+              speed={2.8}
+              delay={0.5}
+              shineWidth={45}
+              softness={0.7}
+              glow={0.3}
+              className="font-serif italic font-normal tracking-wide inline-block"
+            />
           </h1>
           <p className="hero-subtext font-satisfy text-xl sm:text-2xl text-teal-200/95 font-normal tracking-wide">
             &ldquo;Don&apos;t trust the voice. Verify the action.&rdquo;
@@ -79,7 +97,16 @@ export default function LandingPage() {
 
           {/* Compact Protection Flow */}
           <div className="protection-flow">
-            <div className="flow-step highlight-step">DETECT Voice</div>
+            <div className="flow-step highlight-step">
+              <ShinyText
+                text="DETECT Voice"
+                color="#6ee7b7"
+                shineColor="#ffffff"
+                speed={2}
+                delay={1.2}
+                glow={0.2}
+              />
+            </div>
             <div className="flow-arrow">&rarr;</div>
             <div className="flow-step">SCORE</div>
             <div className="flow-arrow">&rarr;</div>
@@ -87,7 +114,16 @@ export default function LandingPage() {
             <div className="flow-arrow">&rarr;</div>
             <div className="flow-step">VERIFY</div>
             <div className="flow-arrow">&rarr;</div>
-            <div className="flow-step">PROTECT</div>
+            <div className="flow-step">
+              <ShinyText
+                text="PROTECT"
+                color="#67e8f9"
+                shineColor="#ffffff"
+                speed={2}
+                delay={1.5}
+                glow={0.25}
+              />
+            </div>
           </div>
         </div>
 

@@ -19,6 +19,7 @@ import {
 import LanguageSelector from './LanguageSelector';
 import { useTranslation } from '../i18n/useTranslation';
 import GooeyNav from './GooeyNav';
+import ShinyText from './ShinyText';
 import { prefetchRoute } from '../App';
 
 export default function Navbar() {
@@ -120,9 +121,17 @@ export default function Navbar() {
             />
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="text-base font-black font-brand-display tracking-tight text-white notranslate">
-              Dhwani
-            </span>
+            <ShinyText
+              text="Dhwani"
+              color="#ffffff"
+              shineColor="#fbbf24"
+              speed={2.2}
+              delay={1.5}
+              softness={0.7}
+              trigger="loop"
+              glow={0.3}
+              className="text-base font-black font-brand-display tracking-tight notranslate"
+            />
             <span className="text-[9px] font-bold font-brand tracking-widest px-1.5 py-0.2 rounded-full border text-amber-300 bg-amber-500/15 border-amber-500/30 notranslate">
               AI
             </span>
