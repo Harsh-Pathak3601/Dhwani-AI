@@ -164,8 +164,8 @@ const NumberCheck = () => {
                   text="AI-POWERED VOICE SECURITY"
                   color="#fbbf24"
                   shineColor="#ffffff"
-                  speed={2.6}
-                  delay={0.8}
+                  speed={2.2}
+                  delay={3.5}
                   glow={0.25}
                 />
               </span>
@@ -176,8 +176,8 @@ const NumberCheck = () => {
                   text="Against Voice Scams"
                   color="#f59e0b"
                   shineColor="#fef08a"
-                  speed={2.8}
-                  delay={0.8}
+                  speed={2.4}
+                  delay={3}
                   shineWidth={45}
                   softness={0.7}
                   glow={0.3}
@@ -197,7 +197,7 @@ const NumberCheck = () => {
                     color="#fcd34d"
                     shineColor="#ffffff"
                     speed={2}
-                    delay={1.2}
+                    delay={3}
                     glow={0.2}
                   />
                 </span>
@@ -214,7 +214,7 @@ const NumberCheck = () => {
                     color="#fdba74"
                     shineColor="#ffffff"
                     speed={2}
-                    delay={1.5}
+                    delay={3.2}
                     glow={0.25}
                   />
                 </span>

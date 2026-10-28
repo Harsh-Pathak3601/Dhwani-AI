@@ -126,7 +126,7 @@ export default function Navbar() {
               color="#ffffff"
               shineColor="#fbbf24"
               speed={2.2}
-              delay={1.5}
+              delay={3.5}
               softness={0.7}
               trigger="loop"
               glow={0.3}

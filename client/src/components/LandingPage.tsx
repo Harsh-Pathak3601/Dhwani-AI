@@ -28,8 +28,8 @@ export default function LandingPage() {
               text="AI-POWERED VOICE SECURITY"
               color="#34d399"
               shineColor="#ffffff"
-              speed={2.6}
-              delay={0.8}
+              speed={2.2}
+              delay={3.5}
               glow={0.3}
             />
           </span>
@@ -39,8 +39,8 @@ export default function LandingPage() {
               text="Against Voice Scams"
               color="#67e8f9"
               shineColor="#ffffff"
-              speed={2.8}
-              delay={0.5}
+              speed={2.4}
+              delay={3}
               shineWidth={45}
               softness={0.7}
               glow={0.3}
@@ -103,7 +103,7 @@ export default function LandingPage() {
                 color="#6ee7b7"
                 shineColor="#ffffff"
                 speed={2}
-                delay={1.2}
+                delay={3}
                 glow={0.2}
               />
             </div>
@@ -120,7 +120,7 @@ export default function LandingPage() {
                 color="#67e8f9"
                 shineColor="#ffffff"
                 speed={2}
-                delay={1.5}
+                delay={3.2}
                 glow={0.25}
               />
             </div>
