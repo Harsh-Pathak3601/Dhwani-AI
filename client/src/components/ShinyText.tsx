@@ -20,8 +20,36 @@ type RGBAColor = [number, number, number, number];
 
 const parseColor = (value: string): RGBAColor | null => {
   if (typeof document === 'undefined') return null;
-  if (!paint) paint = document.createElement('canvas').getContext('2d');
-  if (!paint) return null;
+  try {
+    if (!paint) {
+      const canvas = document.createElement('canvas');
+      paint = canvas.getContext ? canvas.getContext('2d') : null;
+    }
+  } catch {
+    paint = null;
+  }
+  if (!paint) {
+    if (value.startsWith('#')) {
+      const hex = value.slice(1);
+      if (hex.length === 3) {
+        return [
+          parseInt(hex[0] + hex[0], 16),
+          parseInt(hex[1] + hex[1], 16),
+          parseInt(hex[2] + hex[2], 16),
+          1
+        ];
+      }
+      if (hex.length >= 6) {
+        return [
+          parseInt(hex.slice(0, 2), 16),
+          parseInt(hex.slice(2, 4), 16),
+          parseInt(hex.slice(4, 6), 16),
+          1
+        ];
+      }
+    }
+    return null;
+  }
   paint.fillStyle = '#000000';
   paint.fillStyle = value;
   const resolved = String(paint.fillStyle);
@@ -381,18 +409,21 @@ const ShinyText: React.FC<ShinyTextProps> = ({
       wake();
     };
 
-    const observer = new IntersectionObserver(entries => {
-      const visible = entries.some(item => item.isIntersecting);
-      state.visible = visible;
-      const s = settingsRef.current;
-      if (!visible) return;
-      if (s.trigger === 'view' && !state.seen && !reduce && !s.disabled) {
-        state.seen = true;
-        sweep(entry(), exit(), performance.now());
-      }
-      wake();
-    });
-    observer.observe(root);
+    let observer: IntersectionObserver | null = null;
+    if (typeof IntersectionObserver !== 'undefined') {
+      observer = new IntersectionObserver(entries => {
+        const visible = entries.some(item => item.isIntersecting);
+        state.visible = visible;
+        const s = settingsRef.current;
+        if (!visible) return;
+        if (s.trigger === 'view' && !state.seen && !reduce && !s.disabled) {
+          state.seen = true;
+          sweep(entry(), exit(), performance.now());
+        }
+        wake();
+      });
+      observer.observe(root);
+    }
 
     root.addEventListener('pointerenter', onEnter);
     root.addEventListener('pointermove', onMove);
@@ -417,7 +448,7 @@ const ShinyText: React.FC<ShinyTextProps> = ({
       alive = false;
       cancelAnimationFrame(raf);
       window.clearTimeout(timer);
-      observer.disconnect();
+      observer?.disconnect();
       root.removeEventListener('pointerenter', onEnter);
       root.removeEventListener('pointermove', onMove);
       root.removeEventListener('pointerleave', onLeave);
